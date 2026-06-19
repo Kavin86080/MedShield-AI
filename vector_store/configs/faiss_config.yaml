@@ -1,0 +1,3 @@
+embedding_dimension: 384
+metric: l2
+top_k: 5

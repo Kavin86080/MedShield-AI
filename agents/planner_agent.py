@@ -15,7 +15,7 @@ class PlannerAgent(BaseAgent):
         state
     ):
 
-        question = state["question"]
+        question = state.question
 
         plan = {
             "task": "medical_qa",
@@ -23,6 +23,12 @@ class PlannerAgent(BaseAgent):
             "next_agent": "retrieval"
         }
 
-        state["plan"] = plan
+        state.metadata["plan"] = plan
+
+        state.current_agent = self.name
+
+        state.add_history(
+            self.name
+        )
 
         return state

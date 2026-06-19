@@ -28,12 +28,12 @@ class ReasoningAgent(BaseAgent):
     ):
 
         context_text = "\n\n".join(
-            state["contexts"]
+            state.contexts
         )
 
         prompt = self.prompt_engine.build_prompt(
             template_name="rag",
-            question=state["question"],
+            question=state.question,
             context=context_text
         )
 
@@ -41,6 +41,12 @@ class ReasoningAgent(BaseAgent):
             prompt
         )
 
-        state["answer"] = answer
+        state.answer = answer
+
+        state.current_agent = self.name
+
+        state.add_history(
+            self.name
+        )
 
         return state

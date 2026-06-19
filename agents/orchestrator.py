@@ -17,6 +17,9 @@ from agents.reasoning_agent import (
 from agents.report_agent import (
     ReportAgent
 )
+from agents.agent_state import (
+    AgentState
+)
 
 
 class AgentOrchestrator:
@@ -69,9 +72,9 @@ class AgentOrchestrator:
         question
     ):
 
-        state = {
-            "question": question
-        }
+        state = AgentState(
+            question=question
+        )
 
         # Step 1: Planning
         state = self.planner.run(
@@ -93,4 +96,4 @@ class AgentOrchestrator:
             state
         )
 
-        return state["report"]
+        return state.report

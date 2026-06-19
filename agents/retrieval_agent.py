@@ -19,12 +19,18 @@ class RetrievalAgent(BaseAgent):
         state
     ):
 
-        question = state["question"]
+        question = state.question
 
         contexts = self.rag.retrieve_context(
             question
         )
 
-        state["contexts"] = contexts
+        state.contexts = contexts
+
+        state.current_agent = self.name
+
+        state.add_history(
+            self.name
+        )
 
         return state

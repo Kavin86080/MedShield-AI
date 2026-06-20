@@ -20,16 +20,21 @@ class AgentRouter(BaseAgent):
             .strip()
         )
 
-        # PDF / Document Analysis
+        # ---------------------------------
+        # Document Analysis Route
+        # ---------------------------------
 
         if any(
             keyword in question
             for keyword in [
-                "pdf",
+                "paper",
                 "document",
-                "medical report",
-                "lab report",
-                "blood report"
+                "pdf",
+                "research",
+                "medisense",
+                "article",
+                "publication",
+                "chapter"
             ]
         ):
 
@@ -37,7 +42,9 @@ class AgentRouter(BaseAgent):
                 "document_analysis"
             )
 
-        # Medical Image Analysis
+        # ---------------------------------
+        # Medical Image Analysis Route
+        # ---------------------------------
 
         elif any(
             keyword in question
@@ -47,7 +54,10 @@ class AgentRouter(BaseAgent):
                 "mri",
                 "ct",
                 "scan",
-                "image"
+                "image",
+                "radiology",
+                "chest xray",
+                "chest x-ray"
             ]
         ):
 
@@ -55,7 +65,9 @@ class AgentRouter(BaseAgent):
                 "image_analysis"
             )
 
-        # Report Generation
+        # ---------------------------------
+        # Report Generation Route
+        # ---------------------------------
 
         elif any(
             keyword in question
@@ -63,20 +75,26 @@ class AgentRouter(BaseAgent):
                 "generate report",
                 "create report",
                 "make report",
-                "patient report"
+                "patient report",
+                "summary report"
             ]
         ):
+
             route = (
                 "report_generation"
             )
 
-        # Default Path
+        # ---------------------------------
+        # Default Medical QA Route
+        # ---------------------------------
 
         else:
 
             route = (
                 "medical_qa"
             )
+
+        # Store route in state
 
         state.metadata[
             "route"

@@ -2,6 +2,14 @@ from rag.pipelines.rag_pipeline import (
     RAGPipeline
 )
 
+from agents.agent_state import (
+    AgentState
+)
+
+from agents.agent_router import (
+    AgentRouter
+)
+
 from agents.planner_agent import (
     PlannerAgent
 )
@@ -17,21 +25,28 @@ from agents.reasoning_agent import (
 from agents.report_agent import (
     ReportAgent
 )
-from agents.agent_state import (
-    AgentState
+
+from agents.document_agent import (
+    DocumentAgent
 )
-from agents.agent_router import (
-    AgentRouter
-)
+
 
 class AgentOrchestrator:
 
     def __init__(self):
+
+        # -------------------------
+        # Router
+        # -------------------------
+
         self.router = AgentRouter()
-        # Initialize RAG Pipeline
+
+        # -------------------------
+        # Traditional Medical QA
+        # -------------------------
+
         self.rag_pipeline = RAGPipeline()
 
-        # Sample documents for testing
         documents = [
 
             """
@@ -53,12 +68,14 @@ class AgentOrchestrator:
             """
         ]
 
-        # Index documents into FAISS
         self.rag_pipeline.index_documents(
             documents
         )
 
-        # Initialize Agents
+        # -------------------------
+        # Agents
+        # -------------------------
+
         self.planner = PlannerAgent()
 
         self.retrieval = RetrievalAgent(
@@ -69,6 +86,18 @@ class AgentOrchestrator:
 
         self.report = ReportAgent()
 
+        # -------------------------
+        # Document Agent
+        # -------------------------
+
+        self.document_agent = (
+            DocumentAgent()
+        )
+
+        self.document_agent.load_document(
+            "datasets/reports/medisense_paper.pdf"
+        )
+
     def run(
         self,
         question
@@ -77,26 +106,109 @@ class AgentOrchestrator:
         state = AgentState(
             question=question
         )
-        # Step 0: Routing
-        state = self.router.run(state)
-        # Step 1: Planning
+
+        # =========================
+        # Step 1: Route Question
+        # =========================
+
+        state = self.router.run(
+            state
+        )
+
+        route = (
+            state.metadata.get(
+                "route"
+            )
+        )
+
+        # =========================
+        # DOCUMENT ANALYSIS
+        # =========================
+
+        if route == (
+            "document_analysis"
+        ):
+
+            state = (
+                self.document_agent.run(
+                    state
+                )
+            )
+
+            state = (
+                self.report.run(
+                    state
+                )
+            )
+
+            return (
+                state.report
+            )
+
+        # =========================
+        # IMAGE ANALYSIS
+        # =========================
+
+        elif route == (
+            "image_analysis"
+        ):
+
+            state.answer = (
+                "Image Analysis Agent will be implemented in Phase 7."
+            )
+
+            state = (
+                self.report.run(
+                    state
+                )
+            )
+
+            return (
+                state.report
+            )
+
+        # =========================
+        # REPORT GENERATION
+        # =========================
+
+        elif route == (
+            "report_generation"
+        ):
+
+            state.answer = (
+                "Report Generation Agent will be implemented in Phase 8."
+            )
+
+            state = (
+                self.report.run(
+                    state
+                )
+            )
+
+            return (
+                state.report
+            )
+
+        # =========================
+        # DEFAULT MEDICAL QA
+        # =========================
+
         state = self.planner.run(
             state
         )
 
-        # Step 2: Retrieval
         state = self.retrieval.run(
             state
         )
 
-        # Step 3: Reasoning
         state = self.reasoning.run(
             state
         )
 
-        # Step 4: Reporting
         state = self.report.run(
             state
         )
 
-        return state.report
+        return (
+            state.report
+        )

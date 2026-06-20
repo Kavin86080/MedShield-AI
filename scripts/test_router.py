@@ -23,14 +23,11 @@ from agents.agent_router import (
 router = AgentRouter()
 
 questions = [
-
     "What disease causes fever?",
-
-    "Analyze blood report PDF",
-
     "Analyze chest X-ray image",
-
-    "Generate patient report"
+    "Generate patient report",
+    "What is MediSense?",
+    "Summarize this research paper"
 ]
 
 for q in questions:
@@ -44,7 +41,5 @@ for q in questions:
     )
 
     print(
-        q,
-        "->",
-        state.metadata["route"]
+        f"{q} -> {state.metadata['route']}"
     )

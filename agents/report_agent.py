@@ -25,6 +25,11 @@ class ReportAgent(BaseAgent):
             "contexts":
                 state.contexts,
 
+            "route":
+                state.metadata.get(
+                    "route"
+                ),
+
             "execution_history":
                 state.execution_history
 

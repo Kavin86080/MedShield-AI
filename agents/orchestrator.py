@@ -20,12 +20,14 @@ from agents.report_agent import (
 from agents.agent_state import (
     AgentState
 )
-
+from agents.agent_router import (
+    AgentRouter
+)
 
 class AgentOrchestrator:
 
     def __init__(self):
-
+        self.router = AgentRouter()
         # Initialize RAG Pipeline
         self.rag_pipeline = RAGPipeline()
 
@@ -75,7 +77,8 @@ class AgentOrchestrator:
         state = AgentState(
             question=question
         )
-
+        # Step 0: Routing
+        state = self.router.run(state)
         # Step 1: Planning
         state = self.planner.run(
             state

@@ -1,4 +1,5 @@
 import sys
+
 from pathlib import Path
 
 PROJECT_ROOT = (
@@ -12,21 +13,33 @@ sys.path.insert(
     str(PROJECT_ROOT)
 )
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from agents.orchestrator import (
     AgentOrchestrator
 )
 
-agent = AgentOrchestrator()
+from agents.agent_state import (
+    AgentState
+)
 
-report = agent.run(
+agent = (
+    AgentOrchestrator()
+)
+
+state = AgentState(
+    question=
     "What disease causes fever?"
 )
 
-print("\nFINAL REPORT")
+report = (
+    agent.run(
+        state
+    )
+)
+
+print(
+    "\nFINAL REPORT"
+)
+
 print("=" * 60)
 
 print(report)

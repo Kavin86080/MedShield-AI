@@ -30,6 +30,10 @@ from agents.document_agent import (
     DocumentAgent
 )
 
+from agents.image_agent import (
+    ImageAgent
+)
+
 
 class AgentOrchestrator:
 
@@ -45,7 +49,9 @@ class AgentOrchestrator:
         # Traditional Medical QA
         # -------------------------
 
-        self.rag_pipeline = RAGPipeline()
+        self.rag_pipeline = (
+            RAGPipeline()
+        )
 
         documents = [
 
@@ -73,18 +79,26 @@ class AgentOrchestrator:
         )
 
         # -------------------------
-        # Agents
+        # Medical QA Agents
         # -------------------------
 
-        self.planner = PlannerAgent()
-
-        self.retrieval = RetrievalAgent(
-            self.rag_pipeline
+        self.planner = (
+            PlannerAgent()
         )
 
-        self.reasoning = ReasoningAgent()
+        self.retrieval = (
+            RetrievalAgent(
+                self.rag_pipeline
+            )
+        )
 
-        self.report = ReportAgent()
+        self.reasoning = (
+            ReasoningAgent()
+        )
+
+        self.report = (
+            ReportAgent()
+        )
 
         # -------------------------
         # Document Agent
@@ -98,14 +112,18 @@ class AgentOrchestrator:
             "datasets/reports/medisense_paper.pdf"
         )
 
+        # -------------------------
+        # Image Agent
+        # -------------------------
+
+        self.image_agent = (
+            ImageAgent()
+        )
+
     def run(
         self,
-        question
+        state
     ):
-
-        state = AgentState(
-            question=question
-        )
 
         # =========================
         # Step 1: Route Question
@@ -153,8 +171,10 @@ class AgentOrchestrator:
             "image_analysis"
         ):
 
-            state.answer = (
-                "Image Analysis Agent will be implemented in Phase 7."
+            state = (
+                self.image_agent.run(
+                    state
+                )
             )
 
             state = (
@@ -193,20 +213,28 @@ class AgentOrchestrator:
         # DEFAULT MEDICAL QA
         # =========================
 
-        state = self.planner.run(
-            state
+        state = (
+            self.planner.run(
+                state
+            )
         )
 
-        state = self.retrieval.run(
-            state
+        state = (
+            self.retrieval.run(
+                state
+            )
         )
 
-        state = self.reasoning.run(
-            state
+        state = (
+            self.reasoning.run(
+                state
+            )
         )
 
-        state = self.report.run(
-            state
+        state = (
+            self.report.run(
+                state
+            )
         )
 
         return (

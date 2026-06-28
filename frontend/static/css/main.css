@@ -985,3 +985,272 @@ a:hover { color: var(--primary-hover); }
 .table-premium tbody tr:hover {
     background: var(--bg-subtle);
 }
+
+/* ============================================================
+   MILESTONE 2.5 — Dashboard Polish
+   ============================================================ */
+
+/* --- A. Keyframe Animations --- */
+@keyframes shimmer {
+    0%   { background-position: -600px 0; }
+    100% { background-position:  600px 0; }
+}
+
+@keyframes pulse-ring {
+    0%   { transform: scale(1);   opacity: 0.8; }
+    70%  { transform: scale(2.2); opacity: 0;   }
+    100% { transform: scale(1);   opacity: 0;   }
+}
+
+@keyframes pulse-dot {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.15); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* --- B. Pulse Live Indicator --- */
+.pulse-active {
+    display: inline-block;
+    position: relative;
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.pulse-active::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: inherit;
+    animation: pulse-ring 2s ease-out infinite;
+    opacity: 0.6;
+}
+
+/* --- C. Skeleton Loader --- */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--bg-hover) 25%,
+        var(--border-color) 50%,
+        var(--bg-hover) 75%
+    );
+    background-size: 600px 100%;
+    animation: shimmer 1.6s infinite linear;
+    border-radius: var(--border-radius-sm);
+    color: transparent !important;
+    user-select: none;
+    pointer-events: none;
+}
+
+.skeleton-text {
+    height: 0.875rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    width: 100%;
+}
+
+.skeleton-text.w-75 { width: 75%; }
+.skeleton-text.w-50 { width: 50%; }
+
+.skeleton-badge {
+    height: 1.4rem;
+    width: 4.5rem;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.skeleton-stat {
+    height: 2rem;
+    width: 3.5rem;
+    border-radius: var(--border-radius-sm);
+    display: inline-block;
+}
+
+/* --- D. Empty State --- */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    gap: 0.75rem;
+}
+
+.empty-state-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(var(--primary-rgb), 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.empty-state-sub {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    max-width: 280px;
+}
+
+/* --- E. Icon Sizing Standard --- */
+.icon-sm  { font-size: 0.875rem; width: 1rem; text-align: center; }
+.icon-md  { font-size: 1rem;     width: 1.25rem; text-align: center; }
+.icon-lg  { font-size: 1.25rem;  width: 1.5rem; text-align: center; }
+
+/* Consistent card header icon styling */
+.card-premium h5 > i,
+.card-premium h6 > i,
+.card-premium-flat h5 > i,
+.card-premium-flat h6 > i {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* --- F. Card Equal Heights (Milestone 2.5) --- */
+.row-equal-height > [class*="col"] {
+    display: flex;
+    flex-direction: column;
+}
+
+.row-equal-height > [class*="col"] > .card-premium,
+.row-equal-height > [class*="col"] > .card-premium-flat {
+    flex: 1;
+}
+
+/* --- G. Focus / Accessibility Ring --- */
+:focus-visible {
+    outline: 2.5px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-sm);
+}
+
+.btn:focus-visible,
+button:focus-visible {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.25);
+    outline: none;
+}
+
+/* --- H. Button Consistency --- */
+.btn {
+    transition: all 200ms ease;
+    font-weight: 500;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* --- I. Badge Improvements --- */
+.badge-premium {
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- J. Chart Legend Typography --- */
+.chartjs-legend-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+}
+
+/* --- K. Typography Hierarchy Utilities --- */
+.tracking-wider { letter-spacing: 0.08em; }
+.tracking-wide   { letter-spacing: 0.05em; }
+
+.text-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+}
+
+/* --- L. Section Spacing --- */
+.section-gap { margin-bottom: 2rem; }
+
+/* --- M. Smooth Transitions on all interactive cards --- */
+.card-premium,
+.card-premium-flat,
+.glass-card,
+.glass-card-no-hover {
+    transition: box-shadow 250ms ease,
+                transform 250ms ease,
+                border-color 250ms ease;
+}
+
+/* --- N. Responsive Overflow Prevention --- */
+@media (max-width: 767.98px) {
+    .hero-section {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .hero-section h2 {
+        font-size: 1.35rem;
+    }
+
+    .card-premium,
+    .card-premium-flat,
+    .glass-card-no-hover {
+        /* Prevent hover lift on touch to avoid layout jank */
+        transform: none !important;
+    }
+
+    .activity-feed-table {
+        font-size: 0.8rem;
+    }
+
+    .activity-feed-table tbody tr td {
+        padding: 0.6rem 0.5rem !important;
+    }
+
+    .badge-premium {
+        font-size: 0.68rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .page-container {
+        padding: 1.25rem;
+    }
+
+    /* Stack analytics rows cleanly */
+    .col-md-8,
+    .col-md-4 {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Prevent card hover lift on tablets */
+    .card-premium:hover {
+        transform: none;
+    }
+}
+
+/* --- O. Page Section Entry Animation --- */
+.row.g-3,
+.row.g-4 {
+    animation: fadeInUp 0.3s ease-out both;
+}
+

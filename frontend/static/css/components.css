@@ -893,3 +893,102 @@
     color: var(--text-muted);
     font-size: 0.85rem;
 }
+
+/* Timeline Table Enhancements */
+.timeline-table {
+    border-collapse: separate !important;
+    border-spacing: 0 0.75rem !important;
+}
+
+.timeline-table tr {
+    background: var(--bg-hover) !important;
+    transition: all 250ms ease;
+    border-radius: var(--border-radius-sm);
+}
+
+.timeline-table tr:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.timeline-table td {
+    border: none !important;
+    padding: 0.875rem 1rem !important;
+    color: var(--text-main) !important;
+}
+
+.timeline-table td.text-white {
+    color: var(--text-main) !important;
+}
+
+/* ============================================================
+   Activity Feed Table (Milestone 2.4)
+   ============================================================ */
+.activity-feed-table {
+    border-collapse: separate !important;
+    border-spacing: 0 0.5rem !important;
+}
+
+.activity-feed-table thead tr th {
+    background: transparent !important;
+}
+
+.activity-feed-table tbody tr {
+    background: transparent;
+    transition: all 250ms ease;
+    cursor: default;
+}
+
+.activity-feed-table tbody tr:hover {
+    background: var(--bg-hover) !important;
+    border-radius: var(--border-radius-sm);
+}
+
+.activity-feed-table tbody tr td {
+    border: none !important;
+    padding: 0.75rem 0.875rem !important;
+    color: var(--text-main) !important;
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+.activity-feed-table tbody tr td.text-white,
+.activity-feed-table tbody tr td.fw-medium {
+    color: var(--text-main) !important;
+    font-weight: 500;
+}
+
+.activity-feed-table tbody tr td.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Activity Stat Icon */
+.activity-stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.activity-stat-item {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    transition: background 250ms ease;
+}
+
+.activity-stat-item:hover {
+    background: var(--bg-hover);
+}
+
+/* Auto-hide empty state row when real rows are populated by JS.
+   Uses CSS :has() — supported in all modern browsers (Chrome 105+, FF 121+, Safari 15.4+) */
+#activity-table-body:has(tr:not(.activity-empty-state-row)) .activity-empty-state-row {
+    display: none;
+}
+
+
+

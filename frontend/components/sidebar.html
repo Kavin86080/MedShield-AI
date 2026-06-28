@@ -1,1 +1,137 @@
-# Placeholder for sidebar.html
+<!-- MedShield-X Sidebar Navigation -->
+<aside id="sidebar" class="sidebar-premium">
+
+    <!-- Brand Header -->
+    <div class="sidebar-header">
+        <a href="/" class="sidebar-brand" title="MedShield-X Home">
+            <div class="sidebar-brand-icon">
+                <i class="fa-solid fa-shield-heart"></i>
+            </div>
+            <span class="sidebar-brand-name">MedShield-<span class="brand-x">X</span></span>
+        </a>
+        <button id="sidebar-collapse-btn" class="sidebar-toggle-btn d-none d-lg-flex" title="Collapse Sidebar">
+            <i class="fa-solid fa-chevron-left" id="toggle-icon"></i>
+        </button>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="sidebar-nav">
+        <ul class="sidebar-menu">
+
+            <!-- Dashboard -->
+            <li class="sidebar-item">
+                <a href="/" class="sidebar-item-link {% if active_page == 'dashboard' %}active{% endif %}" title="Dashboard">
+                    <span class="sidebar-icon"><i class="fa-solid fa-chart-pie"></i></span>
+                    <span class="sidebar-item-text">Dashboard</span>
+                </a>
+            </li>
+
+            <!-- Medical Assistant -->
+            <li class="sidebar-item">
+                <a href="/assistant" class="sidebar-item-link {% if active_page == 'assistant' %}active{% endif %}" title="Medical Assistant">
+                    <span class="sidebar-icon"><i class="fa-solid fa-user-doctor"></i></span>
+                    <span class="sidebar-item-text">Medical Assistant</span>
+                </a>
+            </li>
+
+            <!-- Orchestrator -->
+            <li class="sidebar-item">
+                <a href="/orchestrator-page" class="sidebar-item-link {% if active_page == 'orchestrator' %}active{% endif %}" title="Orchestrator">
+                    <span class="sidebar-icon"><i class="fa-solid fa-diagram-project"></i></span>
+                    <span class="sidebar-item-text">Orchestrator</span>
+                </a>
+            </li>
+
+            <!-- X-Ray Analysis -->
+            <li class="sidebar-item">
+                <a href="/xray" class="sidebar-item-link {% if active_page == 'xray' %}active{% endif %}" title="X-Ray Analysis">
+                    <span class="sidebar-icon"><i class="fa-solid fa-lungs"></i></span>
+                    <span class="sidebar-item-text">X-Ray Analysis</span>
+                </a>
+            </li>
+
+            <!-- Document Analysis -->
+            <li class="sidebar-item">
+                <a href="/document" class="sidebar-item-link {% if active_page == 'document' %}active{% endif %}" title="Document Analysis">
+                    <span class="sidebar-icon"><i class="fa-solid fa-file-waveform"></i></span>
+                    <span class="sidebar-item-text">Document Analysis</span>
+                </a>
+            </li>
+
+            <!-- Patient Passport -->
+            <li class="sidebar-item">
+                <a href="/passport" class="sidebar-item-link {% if active_page == 'passport' %}active{% endif %}" id="link-passport" title="Patient Passport">
+                    <span class="sidebar-icon"><i class="fa-solid fa-id-card-clip"></i></span>
+                    <span class="sidebar-item-text">Patient Passport</span>
+                </a>
+            </li>
+
+            <!-- Clinical Reports -->
+            <li class="sidebar-item">
+                <a href="/reports" class="sidebar-item-link {% if active_page == 'reports' %}active{% endif %}" id="link-reports" title="Clinical Reports">
+                    <span class="sidebar-icon"><i class="fa-solid fa-file-medical"></i></span>
+                    <span class="sidebar-item-text">Clinical Reports</span>
+                </a>
+            </li>
+
+            <!-- AI Explainability -->
+            <li class="sidebar-item">
+                <a href="/explainability" class="sidebar-item-link {% if active_page == 'explainability' %}active{% endif %}" title="AI Explainability">
+                    <span class="sidebar-icon"><i class="fa-solid fa-brain"></i></span>
+                    <span class="sidebar-item-text">AI Explainability</span>
+                </a>
+            </li>
+
+            <!-- Roadmap Testing -->
+            <li class="sidebar-item">
+                <a href="/robustness" class="sidebar-item-link {% if active_page == 'robustness' %}active{% endif %}" title="Roadmap Testing">
+                    <span class="sidebar-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                    <span class="sidebar-item-text">Roadmap Testing</span>
+                </a>
+            </li>
+
+            <!-- Research Analytics -->
+            <li class="sidebar-item">
+                <a href="/research" class="sidebar-item-link {% if active_page == 'research' %}active{% endif %}" title="Research Analytics">
+                    <span class="sidebar-icon"><i class="fa-solid fa-chart-bar"></i></span>
+                    <span class="sidebar-item-text">Research Analytics</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <li class="sidebar-divider"></li>
+
+            <!-- Settings -->
+            <li class="sidebar-item">
+                <a href="/settings" class="sidebar-item-link {% if active_page == 'settings' %}active{% endif %}" title="Settings">
+                    <span class="sidebar-icon"><i class="fa-solid fa-sliders"></i></span>
+                    <span class="sidebar-item-text">Settings</span>
+                </a>
+            </li>
+
+            <!-- Doctor Profile -->
+            <li class="sidebar-item">
+                <a href="/profile" class="sidebar-item-link {% if active_page == 'profile' %}active{% endif %}" title="Doctor Profile">
+                    <span class="sidebar-icon"><i class="fa-solid fa-circle-user"></i></span>
+                    <span class="sidebar-item-text">Doctor Profile</span>
+                </a>
+            </li>
+
+        </ul>
+    </nav>
+
+    <!-- Doctor Profile Footer -->
+    <div class="sidebar-footer" id="sidebar-footer">
+        <div class="sidebar-doctor-info">
+            <div class="sidebar-doctor-avatar" id="sidebar-doc-avatar">DR</div>
+            <div class="sidebar-doctor-meta sidebar-item-text">
+                <span class="sidebar-doctor-name" id="sidebar-doc-name">Doctor</span>
+                <span class="sidebar-doctor-specialty" id="sidebar-doc-specialty">Clinical Expert</span>
+            </div>
+        </div>
+        <button class="sidebar-logout-btn" id="sidebar-logout-btn" title="Sign Out">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+    </div>
+
+</aside>

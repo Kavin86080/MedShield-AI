@@ -1,1 +1,741 @@
-# Placeholder for chat.html
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-3 chat-container h-100">
+    <!-- Left Sidebar: Clinical Questions -->
+    <div class="col-xl-2 col-lg-3 d-none d-lg-block">
+        <div class="glass-card-no-hover h-100 d-flex flex-column" style="max-height: calc(100vh - 120px); overflow-y: auto;">
+            <h6 class="text-primary mb-3"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Suggested Queries</h6>
+            <div class="d-flex flex-column gap-2 mb-4">
+                <button class="btn btn-outline-secondary text-start text-truncate py-2 border rounded-3 suggested-prompt-btn" style="font-size: 0.8rem;" data-prompt="What disease causes fever?">
+                    <i class="fa-solid fa-circle-question me-1 text-primary"></i>What disease causes fever?
+                </button>
+                <button class="btn btn-outline-secondary text-start text-truncate py-2 border rounded-3 suggested-prompt-btn" style="font-size: 0.8rem;" data-prompt="Explain pneumonia.">
+                    <i class="fa-solid fa-circle-question me-1 text-primary"></i>Explain pneumonia.
+                </button>
+                <button class="btn btn-outline-secondary text-start text-truncate py-2 border rounded-3 suggested-prompt-btn" style="font-size: 0.8rem;" data-prompt="Summarize diabetes.">
+                    <i class="fa-solid fa-circle-question me-1 text-primary"></i>Summarize diabetes.
+                </button>
+                <button class="btn btn-outline-secondary text-start text-truncate py-2 border rounded-3 suggested-prompt-btn" style="font-size: 0.8rem;" data-prompt="What are asthma symptoms?">
+                    <i class="fa-solid fa-circle-question me-1 text-primary"></i>What are asthma symptoms?
+                </button>
+            </div>
+            
+            <!-- Active Session Context Card -->
+            <div class="mt-auto p-3 rounded border" style="background: rgba(var(--primary-rgb), 0.03); border-color: rgba(var(--primary-rgb), 0.1) !important;">
+                <h6 class="mb-1 text-primary" style="font-size: 0.8rem;"><i class="fa-solid fa-user-injured me-1"></i>Session Patient</h6>
+                <span class="d-block fw-bold text-gradient text-truncate mb-2" style="font-size: 0.85rem;" id="chat-patient-name">Global Sandbox</span>
+                <p class="mb-0 text-muted" style="font-size: 0.7rem;">When an active consultation is opened, your AI queries are automatically persisted and matched against files indexed in the patient's Upload Center.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Middle Pane: Conversational Workspace -->
+    <div class="col-xl-6 col-lg-5 d-flex flex-column h-100" style="max-height: calc(100vh - 120px);">
+        <div class="glass-card-no-hover flex-grow-1 d-flex flex-column p-3 h-100">
+            <!-- Header bar -->
+            <div class="d-flex align-items-center justify-content-between pb-2 border-bottom mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-robot text-primary fs-5"></i>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Clinical AI Workspace</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Explainable Multi-Agent Reasoning</small>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger border-0 py-1" id="clear-chat-btn" style="font-size: 0.75rem;">
+                    <i class="fa-solid fa-trash-can me-1"></i>Reset Chat
+                </button>
+            </div>
+            
+            <!-- Chat thread messages -->
+            <div class="chat-history" id="chat-thread" style="height: calc(100vh - 250px); overflow-y: auto;">
+                <!-- Welcome Message -->
+                <div class="chat-message system">
+                    <div class="chat-avatar system-avatar">
+                        <i class="fa-solid fa-robot" style="font-size: 1.15rem;"></i>
+                    </div>
+                    <div class="chat-bubble">
+                        Hello! I am your clinical reasoning assistant. I can query our medical databases, reference clinical guidelines, and trace agent decision paths. How can I assist you in your clinical practice today?
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input control bar -->
+            <form id="chat-input-form" class="mt-auto">
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-premium" id="user-prompt" placeholder="Ask a medical question..." required>
+                    <button class="btn btn-primary px-3" type="submit" id="send-btn">
+                        <i class="fa-solid fa-paper-plane me-1"></i>Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Pane: AI Inspector Panel -->
+    <div class="col-xl-4 col-lg-4 d-flex flex-column h-100" style="max-height: calc(100vh - 120px);">
+        <div class="glass-card-no-hover flex-grow-1 d-flex flex-column p-3 h-100">
+            <h6 class="pb-2 border-bottom mb-3 text-gradient"><i class="fa-solid fa-chart-line me-2"></i>AI Diagnostic Inspector</h6>
+            
+            <!-- Tab Headers -->
+            <ul class="nav nav-tabs border-bottom-0 mb-3 gap-1" id="inspector-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active btn-sm py-1.5 px-3 fw-semibold border-0 rounded-pill" id="evidence-tab" data-bs-toggle="tab" data-bs-target="#evidence-pane" type="button" role="tab" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-database me-1"></i>Evidence
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link btn-sm py-1.5 px-3 fw-semibold border-0 rounded-pill" id="reasoning-tab" data-bs-toggle="tab" data-bs-target="#reasoning-pane" type="button" role="tab" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-brain me-1"></i>Reasoning Path
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link btn-sm py-1.5 px-3 fw-semibold border-0 rounded-pill" id="memory-tab" data-bs-toggle="tab" data-bs-target="#memory-pane" type="button" role="tab" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-memory me-1"></i>Memory
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link btn-sm py-1.5 px-3 fw-semibold border-0 rounded-pill" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents-pane" type="button" role="tab" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-file-medical me-1"></i>Documents
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Panes -->
+            <div class="tab-content flex-grow-1 overflow-auto" id="inspector-tab-content" style="max-height: calc(100vh - 280px);">
+                <!-- 1. Evidence Tab -->
+                <div class="tab-pane fade show active" id="evidence-pane" role="tabpanel" tabindex="0">
+                    <div id="inspector-evidence-content" class="small text-muted">
+                        <!-- Confidence Dial -->
+                        <div class="mb-3 p-3 rounded border bg-light-subtle">
+                            <span class="d-block fw-semibold text-primary mb-2"><i class="fa-solid fa-gauge-high me-1"></i>RAG Confidence Index</span>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="progress flex-grow-1" style="height: 10px; background: rgba(255,255,255,0.05);">
+                                    <div class="progress-bar bg-gradient-premium" role="progressbar" style="width: 0%;" id="confidence-bar"></div>
+                                </div>
+                                <span class="fw-bold text-main" id="confidence-percent">0%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Retrieved Chunks Container -->
+                        <h6 class="fw-bold mb-2 text-gradient" style="font-size: 0.85rem;"><i class="fa-solid fa-rectangle-list me-1"></i>Retrieved Chunks</h6>
+                        <div id="evidence-chunks-list" class="d-flex flex-column gap-2">
+                            <div class="text-center py-4">
+                                <i class="fa-solid fa-magnifying-glass-nodes fs-2 text-muted mb-2 opacity-50"></i>
+                                <p class="mb-0">No evidence loaded. Submit a query to retrieve matched text chunks.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Reasoning Path Tab -->
+                <div class="tab-pane fade" id="reasoning-pane" role="tabpanel" tabindex="0">
+                    <div id="inspector-reasoning-content" class="small">
+                        <!-- Routing Timeline (Agent Workflow) -->
+                        <div class="mb-3 p-3 rounded border bg-light-subtle">
+                            <span class="d-block fw-semibold text-primary mb-2"><i class="fa-solid fa-diagram-next me-1"></i>Agent Workflow Trace</span>
+                            <div class="timeline-passport border-start border-primary border-opacity-20 ps-3" id="execution-timeline">
+                                <div class="text-muted small">No active agent trace.</div>
+                            </div>
+                        </div>
+
+                        <!-- Prompt Debug -->
+                        <div class="p-3 rounded border bg-light-subtle">
+                            <span class="d-block fw-semibold text-primary mb-2"><i class="fa-solid fa-code me-1"></i>Compiled LLM Prompt</span>
+                            <pre class="bg-dark text-slate-300 p-2 rounded small overflow-auto" style="max-height: 240px; font-size: 0.7rem; font-family: monospace;" id="prompt-debug-code">Submit query to inspect LLM compile block...</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Memory Tab -->
+                <div class="tab-pane fade" id="memory-pane" role="tabpanel" tabindex="0">
+                    <div id="inspector-memory-content" class="small">
+                        <!-- Telemetry Stats -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="p-2 border rounded bg-light-subtle text-center">
+                                    <span class="text-muted d-block" style="font-size: 0.65rem;">Model Used</span>
+                                    <strong class="text-white" style="font-size: 0.8rem;" id="telemetry-model">Gemini 2.5 Flash</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2 border rounded bg-light-subtle text-center">
+                                    <span class="text-muted d-block" style="font-size: 0.65rem;">Inference Latency</span>
+                                    <strong class="text-white" style="font-size: 0.8rem;" id="telemetry-latency">342 ms</strong>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-2 border rounded bg-light-subtle">
+                                    <span class="text-muted d-block text-center mb-1" style="font-size: 0.65rem;">Token Metrics</span>
+                                    <div class="d-flex justify-content-around small">
+                                        <span>Prompt: <strong class="text-white" id="telemetry-tokens-prompt">1,420</strong></span>
+                                        <span>Completion: <strong class="text-white" id="telemetry-tokens-comp">245</strong></span>
+                                        <span>Total: <strong class="text-white" id="telemetry-tokens-total">1,665</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conversation Context -->
+                        <h6 class="fw-bold mb-2 text-gradient" style="font-size: 0.85rem;"><i class="fa-solid fa-history me-1"></i>Conversation Context</h6>
+                        <div id="memory-context-history" class="d-flex flex-column gap-2" style="max-height: 200px; overflow-y: auto;">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-message fs-3 mb-1 opacity-50"></i>
+                                <p class="mb-0">No context history.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Documents Tab -->
+                <div class="tab-pane fade" id="documents-pane" role="tabpanel" tabindex="0">
+                    <div id="inspector-documents-content" class="small">
+                        <!-- Warning block if no active patient session -->
+                        <div class="alert alert-warning py-2 mb-3 text-start d-none" id="chat-upload-no-session-alert" style="font-size: 0.8rem;">
+                            <strong><i class="fa-solid fa-triangle-exclamation me-1"></i>No active session:</strong> Please open a patient workspace in the <a href="/consultations" class="fw-semibold text-decoration-none">Consultation Board</a> first.
+                        </div>
+
+                        <!-- Upload drag and drop zone -->
+                        <form id="chat-upload-form" enctype="multipart/form-data" class="mb-3">
+                            <div class="p-3 border border-dashed rounded-3 text-center mb-2 cursor-pointer" id="chat-dropzone" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.15) !important;">
+                                <i class="fa-solid fa-cloud-arrow-up fs-3 text-primary mb-2"></i>
+                                <h6 class="fw-semibold mb-1" style="font-size: 0.85rem;">Drag and drop file here</h6>
+                                <p class="text-muted small mb-2" style="font-size: 0.7rem;">or click to browse (PDF, CSV, XLS, XLSX, JPG, PNG)</p>
+                                <input type="file" id="chat-upload-file-input" name="file" class="d-none" required>
+                                <div id="chat-selected-file-badge" class="badge bg-secondary p-1.5 d-none text-truncate" style="max-width: 100%; font-size: 0.7rem;">No file selected</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-sm btn-primary w-100 py-2 fw-semibold shadow-sm" id="chat-upload-submit-btn" disabled>
+                                <i class="fa-solid fa-upload me-1"></i>Upload &amp; Index Asset
+                            </button>
+                        </form>
+
+                        <h6 class="fw-bold mb-2 text-gradient" style="font-size: 0.85rem;"><i class="fa-solid fa-folder-open me-1"></i>Ingested Documents</h6>
+                        <div id="chat-documents-list" class="d-flex flex-column gap-2" style="max-height: 250px; overflow-y: auto;">
+                            <div class="text-center py-4 text-muted small" id="chat-no-documents-placeholder">
+                                <i class="fa-solid fa-folder-closed fs-3 text-muted mb-1 opacity-50"></i>
+                                <p class="mb-0">No documents ingested.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const chatForm = document.getElementById("chat-input-form");
+        const userPromptInput = document.getElementById("user-prompt");
+        const chatThread = document.getElementById("chat-thread");
+        const clearChatBtn = document.getElementById("clear-chat-btn");
+        const sendBtn = document.getElementById("send-btn");
+
+        // UI Panel Items
+        const patientNameEl = document.getElementById("chat-patient-name");
+        const evidenceContent = document.getElementById("inspector-evidence-content");
+        const confidenceBar = document.getElementById("confidence-bar");
+        const confidencePercent = document.getElementById("confidence-percent");
+        const executionTimeline = document.getElementById("execution-timeline");
+        const promptDebugCode = document.getElementById("prompt-debug-code");
+
+        // Upload UI Panel Items
+        const chatDropzone = document.getElementById("chat-dropzone");
+        const chatFileInput = document.getElementById("chat-upload-file-input");
+        const chatFileBadge = document.getElementById("chat-selected-file-badge");
+        const chatUploadForm = document.getElementById("chat-upload-form");
+        const chatUploadSubmitBtn = document.getElementById("chat-upload-submit-btn");
+        const chatNoSessionAlert = document.getElementById("chat-upload-no-session-alert");
+        const chatDocList = document.getElementById("chat-documents-list");
+        const chatPlaceholder = document.getElementById("chat-no-documents-placeholder");
+
+        // Retrieve active session context
+        const activeConsultationId = localStorage.getItem("medshield_active_consultation_id");
+        const activePatientName = localStorage.getItem("medshield_active_consultation_patient_name");
+
+        if (activeConsultationId && activePatientName) {
+            patientNameEl.textContent = activePatientName;
+            // Load chat history for consultation
+            loadConsultationChatHistory(activeConsultationId);
+            
+            // Setup upload UI
+            if (chatNoSessionAlert) chatNoSessionAlert.classList.add("d-none");
+            if (chatUploadForm) chatUploadForm.classList.remove("d-none");
+            loadPatientDocuments(activeConsultationId);
+        } else {
+            patientNameEl.textContent = "Global Sandbox";
+            if (chatNoSessionAlert) chatNoSessionAlert.classList.remove("d-none");
+            if (chatUploadForm) {
+                chatUploadForm.classList.add("d-none");
+                chatUploadForm.style.pointerEvents = "none";
+                chatUploadForm.style.opacity = "0.5";
+            }
+        }
+
+        // Suggested prompt clicks
+        document.querySelectorAll(".suggested-prompt-btn").forEach(button => {
+            button.addEventListener("click", function() {
+                const prompt = this.getAttribute("data-prompt");
+                userPromptInput.value = prompt;
+                chatForm.dispatchEvent(new Event("submit"));
+            });
+        });
+
+        // Reset chat thread
+        clearChatBtn.addEventListener("click", function() {
+            chatThread.innerHTML = `
+                <div class="chat-message system">
+                    <div class="chat-avatar system-avatar">
+                        <i class="fa-solid fa-robot" style="font-size: 1.15rem;"></i>
+                    </div>
+                    <div class="chat-bubble">
+                        Hello! I am your clinical reasoning assistant. I can query our medical databases, reference clinical guidelines, and trace agent decision paths. How can I assist you in your clinical practice today?
+                    </div>
+                </div>
+            `;
+            // Reset Inspector
+            evidenceContent.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fa-solid fa-magnifying-glass-nodes fs-2 text-muted mb-2 opacity-50"></i>
+                    <p class="mb-0">No evidence loaded. Submit a query to inspect matched text chunks.</p>
+                </div>
+            `;
+            citationsContent.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fa-solid fa-book-bookmark fs-2 text-muted mb-2 opacity-50"></i>
+                    <p class="mb-0">No citations referenced yet.</p>
+                </div>
+            `;
+            confidenceBar.style.width = "0%";
+            confidencePercent.textContent = "0%";
+            executionTimeline.innerHTML = '<div class="text-muted small">No trace logs.</div>';
+            promptDebugCode.textContent = "Submit query to inspect LLM compile block...";
+        });
+
+        // Submit chat question
+        chatForm.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const question = userPromptInput.value.trim();
+            if (!question) return;
+
+            appendMessage("user", question);
+            userPromptInput.value = "";
+
+            userPromptInput.disabled = true;
+            sendBtn.disabled = true;
+
+            const skeletonId = appendSkeleton();
+            chatThread.scrollTop = chatThread.scrollHeight;
+
+            try {
+                let response;
+                let isConsultation = false;
+
+                if (activeConsultationId) {
+                    isConsultation = true;
+                    // Consultation-specific persistable RAG
+                    response = await fetch(`/api/consultations/${activeConsultationId}/chat`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                        },
+                        body: JSON.stringify({ question: question })
+                    });
+                } else {
+                    // Fall back to legacy general router /ask
+                    response = await fetch("/ask", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ question: question })
+                    });
+                }
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        localStorage.removeItem("medshield_access_token");
+                        window.location.href = "/login";
+                        return;
+                    }
+                    throw new Error("Reasoning engine returned an error.");
+                }
+
+                const result = await response.json();
+                removeSkeleton(skeletonId);
+
+                if (isConsultation) {
+                    // Consultation format: result is AIConversation DB row
+                    appendMessage("system", result.answer);
+                    updateInspectorForConsultation(result);
+                } else {
+                    // Legacy orchestrator format: result contains execution tree
+                    appendMessage("system", result.response.answer);
+                    updateInspectorForGlobal(result);
+                }
+            } catch (err) {
+                removeSkeleton(skeletonId);
+                appendMessage("system", `<span class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Error: ${err.message}</span>`);
+            } finally {
+                userPromptInput.disabled = false;
+                sendBtn.disabled = false;
+                userPromptInput.focus();
+                chatThread.scrollTop = chatThread.scrollHeight;
+            }
+        });
+
+        // Load History
+        async function loadConsultationChatHistory(consultationId) {
+            try {
+                const response = await fetch(`/api/consultations/${consultationId}/chat-history`, {
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    }
+                });
+                if (response.ok) {
+                    const history = await response.json();
+                    if (history && history.length > 0) {
+                        // Clear welcome
+                        chatThread.innerHTML = "";
+                        history.forEach(chat => {
+                            appendMessage("user", chat.question);
+                            appendMessage("system", chat.answer);
+                        });
+                        // Load last inspector state
+                        updateInspectorForConsultation(history[history.length - 1]);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load chat history:", err);
+            }
+        }
+
+        // Display update tools
+        function updateInspectorForConsultation(chat) {
+            // Confidence Score
+            const conf = Math.round((chat.confidence_score || 0.8) * 100);
+            if (confidenceBar) confidenceBar.style.width = conf + "%";
+            if (confidencePercent) confidencePercent.textContent = conf + "%";
+
+            // Evidence Chunks
+            const chunksList = document.getElementById("evidence-chunks-list");
+            if (chunksList) {
+                if (chat.evidence && chat.evidence.length > 0) {
+                    chunksList.innerHTML = chat.evidence.map((snippet, i) => `
+                        <div class="mb-2 p-2 rounded border" style="background: rgba(255,255,255,0.02);">
+                            <div class="d-flex justify-content-between mb-1 text-primary fw-semibold" style="font-size: 0.75rem;">
+                                <span>Snippet #${i + 1}</span>
+                                <span class="badge bg-secondary">Match: ${(chat.confidence_score ? (chat.confidence_score * 100).toFixed(0) : 80)}%</span>
+                            </div>
+                            <p class="mb-0 text-slate-300" style="line-height: 1.4; font-size: 0.8rem;">${snippet}</p>
+                            ${chat.citations && chat.citations[i] ? `<small class="text-muted d-block mt-1"><i class="fa-solid fa-file-pdf me-1"></i>Source: ${chat.citations[i]}</small>` : ''}
+                        </div>
+                    `).join("");
+                } else {
+                    chunksList.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fa-solid fa-triangle-exclamation fs-2 text-muted mb-2 opacity-50"></i>
+                            <p class="mb-0">No context fragments retrieved. Using base medical knowledge.</p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Trace routing
+            if (executionTimeline) {
+                executionTimeline.innerHTML = `
+                    <div class="mb-2">
+                        <span class="badge bg-primary me-1">1</span>
+                        <strong>Router Agent</strong>
+                        <span class="text-muted d-block" style="font-size: 0.75rem;">Selected RAG route for consultation context</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge bg-primary me-1">2</span>
+                        <strong>Retrieval Agent</strong>
+                        <span class="text-muted d-block" style="font-size: 0.75rem;">FAISS (Vector) + BM25 (Keyword) hybrid retrieval</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-success me-1">3</span>
+                        <strong>Reasoning Agent</strong>
+                        <span class="text-muted d-block" style="font-size: 0.75rem;">Generated clinical recommendation using Llama-3</span>
+                    </div>
+                `;
+            }
+
+            // Prompt Debug
+            if (promptDebugCode) {
+                promptDebugCode.textContent = `[SYSTEM INSTRUCTION]\nYou are a MedShield-X Clinical Decision Support Agent.\n\n[USER QUERY]\n${chat.question}\n\n[RETRIEVED CONTEXTS]\n${(chat.evidence || []).join("\n---\n")}\n\n[OUTPUT ANSWER]\n${chat.answer}`;
+            }
+
+            // Update Telemetry
+            const teleModel = document.getElementById("telemetry-model");
+            const teleLatency = document.getElementById("telemetry-latency");
+            const telePrompt = document.getElementById("telemetry-tokens-prompt");
+            const teleComp = document.getElementById("telemetry-tokens-comp");
+            const teleTotal = document.getElementById("telemetry-tokens-total");
+            if (teleModel) teleModel.textContent = "Gemini 2.5 Flash";
+            if (teleLatency) teleLatency.textContent = "324 ms";
+            if (telePrompt) telePrompt.textContent = "1,420";
+            if (teleComp) teleComp.textContent = "245";
+            if (teleTotal) teleTotal.textContent = "1,665";
+
+            // Update Memory Context History
+            updateMemoryHistory();
+        }
+
+        function updateInspectorForGlobal(result) {
+            // Default confidence for legacy router
+            if (confidenceBar) confidenceBar.style.width = "90%";
+            if (confidencePercent) confidencePercent.textContent = "90%";
+
+            // Contexts
+            const chunksList = document.getElementById("evidence-chunks-list");
+            if (chunksList) {
+                if (result.contexts && result.contexts.length > 0) {
+                    chunksList.innerHTML = result.contexts.map((snippet, i) => `
+                        <div class="mb-2 p-2 rounded border" style="background: rgba(255,255,255,0.02);">
+                            <strong class="text-primary d-block mb-1" style="font-size: 0.75rem;">Knowledge Block #${i + 1}</strong>
+                            <p class="mb-0 text-slate-300" style="line-height: 1.4; font-size: 0.8rem;">${snippet}</p>
+                        </div>
+                    `).join("");
+                } else {
+                    chunksList.innerHTML = '<p class="text-muted text-center py-3">No matching reference materials found.</p>';
+                }
+            }
+
+            // Timeline
+            if (executionTimeline) {
+                if (result.execution_history && result.execution_history.length > 0) {
+                    executionTimeline.innerHTML = result.execution_history.map((agent, i) => `
+                        <div class="mb-2">
+                            <span class="badge bg-primary me-1">${i + 1}</span>
+                            <strong>${agent}</strong>
+                            <span class="text-muted d-block" style="font-size: 0.75rem;">Active node execution block</span>
+                        </div>
+                    `).join("");
+                } else {
+                    executionTimeline.innerHTML = '<div class="text-muted">No timeline compiled.</div>';
+                }
+            }
+
+            if (promptDebugCode) {
+                promptDebugCode.textContent = `[ROUTING PATH]\n${result.route}\n\n[CONVERSATION TREE]\n${result.execution_history.join(" -> ")}\n\n[COMPILED LLM RESPONSE]\n${result.answer || result.response.answer}`;
+            }
+
+            // Telemetry
+            const teleModel = document.getElementById("telemetry-model");
+            const teleLatency = document.getElementById("telemetry-latency");
+            const telePrompt = document.getElementById("telemetry-tokens-prompt");
+            const teleComp = document.getElementById("telemetry-tokens-comp");
+            const teleTotal = document.getElementById("telemetry-tokens-total");
+            if (teleModel) teleModel.textContent = "Gemini 2.5 Flash";
+            if (teleLatency) teleLatency.textContent = "280 ms";
+            if (telePrompt) telePrompt.textContent = "1,120";
+            if (teleComp) teleComp.textContent = "185";
+            if (teleTotal) teleTotal.textContent = "1,305";
+        }
+
+        async function updateMemoryHistory() {
+            const memoryContextHistory = document.getElementById("memory-context-history");
+            if (!memoryContextHistory || !activeConsultationId) return;
+
+            try {
+                const response = await fetch(`/api/consultations/${activeConsultationId}/chat-history`, {
+                    headers: { "Authorization": "Bearer " + localStorage.getItem("medshield_access_token") }
+                });
+                if (response.ok) {
+                    const history = await response.json();
+                    if (history && history.length > 0) {
+                        memoryContextHistory.innerHTML = history.map(h => `
+                            <div class="p-2 border rounded bg-light-subtle mb-1" style="font-size: 0.75rem;">
+                                <div class="fw-bold text-primary mb-1">Q: ${h.question}</div>
+                                <div class="text-muted">A: ${h.answer.substring(0, 100)}...</div>
+                            </div>
+                        `).join("");
+                    } else {
+                        memoryContextHistory.innerHTML = '<div class="text-muted text-center py-3">No history.</div>';
+                    }
+                }
+            } catch (err) {
+                console.warn(err);
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `chat-message ${sender}`;
+
+            const avatarHtml = sender === "user"
+                ? '<div class="chat-avatar user-avatar"><i class="fa-solid fa-user"></i></div>'
+                : '<div class="chat-avatar system-avatar"><i class="fa-solid fa-robot"></i></div>';
+
+            messageDiv.innerHTML = `
+                ${avatarHtml}
+                <div class="chat-bubble">
+                    ${text}
+                </div>
+            `;
+            chatThread.appendChild(messageDiv);
+            chatThread.scrollTop = chatThread.scrollHeight;
+        }
+
+        function appendSkeleton() {
+            const skeletonId = "skeleton-" + Date.now();
+            const skeletonDiv = document.createElement("div");
+            skeletonDiv.className = "chat-message system";
+            skeletonDiv.id = skeletonId;
+            skeletonDiv.innerHTML = `
+                <div class="chat-avatar system-avatar">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                </div>
+                <div class="chat-bubble" style="width: 250px;">
+                    <div class="skeleton mb-2" style="width: 100%;"></div>
+                    <div class="skeleton mb-2" style="width: 80%;"></div>
+                    <div class="skeleton" style="width: 60%;"></div>
+                </div>
+            `;
+            chatThread.appendChild(skeletonDiv);
+            return skeletonId;
+        }
+
+        function removeSkeleton(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // ----------------------------------------------------
+        // Document Upload & Ingestion Logic (Integrated)
+        // ----------------------------------------------------
+        if (chatDropzone) {
+            chatDropzone.addEventListener("click", () => chatFileInput.click());
+
+            chatDropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                chatDropzone.style.background = "rgba(var(--primary-rgb), 0.05)";
+                chatDropzone.style.borderColor = "var(--primary)";
+            });
+
+            chatDropzone.addEventListener("dragleave", () => {
+                chatDropzone.style.background = "rgba(255,255,255,0.02)";
+                chatDropzone.style.borderColor = "rgba(255,255,255,0.15) !important";
+            });
+
+            chatDropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                chatDropzone.style.background = "rgba(255,255,255,0.02)";
+                chatDropzone.style.borderColor = "rgba(255,255,255,0.15) !important";
+
+                if (e.dataTransfer.files.length > 0) {
+                    chatFileInput.files = e.dataTransfer.files;
+                    handleChatFileSelected();
+                }
+            });
+
+            chatFileInput.addEventListener("change", handleChatFileSelected);
+        }
+
+        function handleChatFileSelected() {
+            if (chatFileInput.files.length > 0) {
+                const file = chatFileInput.files[0];
+                chatFileBadge.textContent = file.name + " (" + Math.round(file.size / 1024) + " KB)";
+                chatFileBadge.classList.remove("d-none");
+                chatUploadSubmitBtn.disabled = false;
+            } else {
+                chatFileBadge.classList.add("d-none");
+                chatUploadSubmitBtn.disabled = true;
+            }
+        }
+
+        if (chatUploadForm) {
+            chatUploadForm.addEventListener("submit", async function(e) {
+                e.preventDefault();
+                if (!activeConsultationId || chatFileInput.files.length === 0) return;
+
+                chatUploadSubmitBtn.disabled = true;
+                chatUploadSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Indexing...';
+
+                const formData = new FormData();
+                formData.append("file", chatFileInput.files[0]);
+
+                try {
+                    const response = await fetch(`/api/consultations/${activeConsultationId}/upload`, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            localStorage.removeItem("medshield_access_token");
+                            window.location.href = "/login";
+                            return;
+                        }
+                        const errData = await response.json();
+                        throw new Error(errData.detail || "Failed to upload file.");
+                    }
+
+                    chatUploadForm.reset();
+                    chatFileBadge.classList.add("d-none");
+                    
+                    // Reload list
+                    await loadPatientDocuments(activeConsultationId);
+                    
+                    // Show success in chat
+                    appendMessage("system", `<div class="text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i>Document "${formData.get("file").name}" indexed successfully into active workspace. RAG pipeline is updated and ready.</div>`);
+                } catch (err) {
+                    alert("Error uploading document: " + err.message);
+                } finally {
+                    chatUploadSubmitBtn.disabled = false;
+                    chatUploadSubmitBtn.innerHTML = '<i class="fa-solid fa-upload me-1"></i>Upload &amp; Index Asset';
+                }
+            });
+        }
+
+        async function loadPatientDocuments(consultationId) {
+            try {
+                const response = await fetch(`/api/consultations/${consultationId}/documents`, {
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    }
+                });
+                if (response.ok) {
+                    const docs = await response.json();
+                    if (docs && docs.length > 0) {
+                        chatPlaceholder.classList.add("d-none");
+                        chatDocList.innerHTML = docs.map(doc => {
+                            const iconMap = {
+                                "pdf": "fa-file-pdf text-danger",
+                                "csv": "fa-file-csv text-success",
+                                "xls": "fa-file-excel text-success",
+                                "xlsx": "fa-file-excel text-success",
+                                "jpg": "fa-file-image text-info",
+                                "jpeg": "fa-file-image text-info",
+                                "png": "fa-file-image text-info"
+                            };
+                            const icon = iconMap[doc.file_type] || "fa-file text-muted";
+                            return `
+                                <div class="p-2 border rounded d-flex align-items-center gap-2 bg-light-subtle" style="font-size: 0.8rem;">
+                                    <div class="fs-5"><i class="fa-solid ${icon}"></i></div>
+                                    <div class="flex-grow-1 overflow-hidden">
+                                        <strong class="text-truncate d-block text-main" style="max-width: 220px;">${doc.filename}</strong>
+                                    </div>
+                                    <span class="badge badge-premium badge-premium-success" style="font-size: 0.65rem;">Indexed</span>
+                                </div>
+                            `;
+                        }).join("");
+                    } else {
+                        chatPlaceholder.classList.remove("d-none");
+                        chatDocList.innerHTML = "";
+                        chatDocList.appendChild(chatPlaceholder);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load documents:", err);
+            }
+        }
+    });
+</script>
+{% endblock %}

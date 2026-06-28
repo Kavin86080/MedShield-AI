@@ -1,12 +1,7 @@
-# Placeholder for reasoning_agent.py
 from agents.base_agent import BaseAgent
 
-from ai_engine.gemini_engine.gemini_service import (
-    GeminiService
-)
-
-from ai_engine.prompt_engine.prompt_engine import (
-    PromptEngine
+from ai_engine.groq_engine.groq_service import (
+    GroqService
 )
 
 
@@ -18,32 +13,59 @@ class ReasoningAgent(BaseAgent):
             name="ReasoningAgent"
         )
 
-        self.gemini = GeminiService()
-
-        self.prompt_engine = PromptEngine()
+        self.llm = (
+            GroqService()
+        )
 
     def run(
         self,
         state
     ):
 
+        if not state.contexts:
+
+            state.answer = (
+                "No relevant medical evidence found."
+            )
+
+            state.current_agent = (
+                self.name
+            )
+
+            state.add_history(
+                self.name
+            )
+
+            return state
+
         context_text = "\n\n".join(
-            state.contexts
+            state.contexts[:5]
         )
 
-        prompt = self.prompt_engine.build_prompt(
-            template_name="rag",
-            question=state.question,
-            context=context_text
-        )
+        try:
 
-        answer = self.gemini.ask(
-            prompt
-        )
+            answer = (
+                self.llm.generate_medical_summary(
+
+                    question=
+                    state.question,
+
+                    context=
+                    context_text
+                )
+            )
+
+        except Exception as e:
+
+            answer = (
+                f"Groq Error: {str(e)}"
+            )
 
         state.answer = answer
 
-        state.current_agent = self.name
+        state.current_agent = (
+            self.name
+        )
 
         state.add_history(
             self.name

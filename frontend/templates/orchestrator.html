@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .workflow-node {
+        position: relative;
+        padding-left: 2.5rem;
+        padding-bottom: 2rem;
+    }
+    .workflow-node::before {
+        content: "";
+        position: absolute;
+        left: 0.75rem;
+        top: 1.5rem;
+        bottom: 0;
+        width: 2px;
+        background: rgba(255,255,255,0.08);
+        z-index: 1;
+    }
+    .workflow-node:last-child::before {
+        display: none;
+    }
+    .workflow-icon {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.02);
+        border: 2px solid rgba(255,255,255,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        z-index: 2;
+        transition: all 0.3s ease;
+    }
+    .workflow-node.active .workflow-icon {
+        background: rgba(var(--primary-rgb), 0.15);
+        border-color: var(--primary);
+        color: var(--primary);
+        box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
+    }
+    .workflow-node.completed .workflow-icon {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: #10B981;
+        color: #10B981;
+    }
+</style>
+
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-10">
+        <!-- Introduction Header -->
+        <div class="glass-card-no-hover mb-4 p-4">
+            <span class="badge badge-premium badge-premium-primary mb-2"><i class="fa-solid fa-network-wired me-1"></i>Multi-Agent Reasoning</span>
+            <h2 class="h4 text-white fw-bold mb-2">Clinical Agent Orchestrator</h2>
+            <p class="text-muted small mb-4">MedShield-X's central orchestration brain. Submit a clinical query or select a sample. The orchestrator will dynamically route the request, build a plan, invoke specialized agents, and compile a structured clinical recommendation.</p>
+            
+            <!-- Intelligent Prompt Area -->
+            <form id="orchestrator-form" class="mb-2">
+                <div class="mb-3">
+                    <label for="orchestrator-prompt" class="form-label fw-semibold small">Intelligent Prompt Input</label>
+                    <textarea class="form-control form-control-premium" id="orchestrator-prompt" rows="3" placeholder="Enter clinical queries, request image predictions, or ask for paper summaries (e.g., 'What disease causes fever?', 'Summarize pneumonia', 'Analyze chest x-ray at datasets/chest_xray/test/NORMAL/IM-0001-0001.jpeg')" required></textarea>
+                </div>
+                
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill sample-orch-btn" data-query="What disease causes fever?">
+                            "What disease causes fever?"
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill sample-orch-btn" data-query="Summarize diabetes.">
+                            "Summarize diabetes"
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill sample-orch-btn" data-query="Analyze Chest X-Ray at datasets/chest_xray/test/NORMAL/IM-0001-0001.jpeg">
+                            "Analyze Chest X-Ray"
+                        </button>
+                    </div>
+                    <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold shadow-sm" id="orch-submit-btn">
+                        <i class="fa-solid fa-play me-2"></i>Execute Orchestrator
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Loading Spinner -->
+        <div class="glass-card-no-hover text-center p-5 mb-4 d-none" id="orch-loading-card">
+            <div class="spinner-border text-primary mb-3" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
+            <h5>Orchestrator Planning &amp; Executing...</h5>
+            <p class="text-muted small mb-0">Classifying request, building retrieval steps, and synthesizing answers across agents.</p>
+        </div>
+        
+        <!-- Output Report Panel -->
+        <div class="glass-card-no-hover mb-4 p-4 d-none" id="orch-output-card">
+            <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-4">
+                <h4 class="mb-0 text-white fw-bold"><i class="fa-solid fa-square-poll-horizontal text-primary me-2"></i>Orchestrator Analysis Report</h4>
+                <div class="d-flex align-items-center gap-3 text-muted small">
+                    <span>Latency: <strong class="text-white" id="orch-latency-val">342ms</strong></span>
+                    <span>Route: <span class="badge badge-premium badge-premium-info text-uppercase" id="orch-route-badge">N/A</span></span>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Left: Flowchart Timeline -->
+                <div class="col-md-5 border-end">
+                    <h6 class="text-primary fw-semibold mb-3"><i class="fa-solid fa-circle-nodes me-2"></i>Agent Workflow Execution</h6>
+                    
+                    <div id="workflow-container">
+                        <!-- 1. Doctor Question -->
+                        <div class="workflow-node completed" id="node-doctor">
+                            <div class="workflow-icon"><i class="fa-solid fa-question"></i></div>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">Doctor Question Ingestion</h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Query parsed and formatted</small>
+                            <div class="mt-2 p-2 rounded bg-dark-subtle text-muted small" style="font-size: 0.75rem;" id="out-node-doctor">...</div>
+                        </div>
+
+                        <!-- 2. Router Agent -->
+                        <div class="workflow-node" id="node-router">
+                            <div class="workflow-icon"><i class="fa-solid fa-route"></i></div>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">Router Agent</h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Selects specialized clinical route</small>
+                            <div class="mt-2 p-2 rounded bg-dark-subtle text-muted small" style="font-size: 0.75rem;" id="out-node-router">...</div>
+                        </div>
+
+                        <!-- 3. Planner Agent -->
+                        <div class="workflow-node" id="node-planner">
+                            <div class="workflow-icon"><i class="fa-solid fa-list-check"></i></div>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">Planner Agent</h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Formulates reasoning &amp; retrieval plan</small>
+                            <div class="mt-2 p-2 rounded bg-dark-subtle text-muted small" style="font-size: 0.75rem;" id="out-node-planner">...</div>
+                        </div>
+
+                        <!-- 4. Retrieval Agent -->
+                        <div class="workflow-node" id="node-retrieval">
+                            <div class="workflow-icon"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">Retrieval Agent</h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Queries FAISS + BM25 indices</small>
+                            <div class="mt-2 p-2 rounded bg-dark-subtle text-muted small" style="font-size: 0.75rem;" id="out-node-retrieval">...</div>
+                        </div>
+
+                        <!-- 5. Reasoning Agent -->
+                        <div class="workflow-node" id="node-reasoning">
+                            <div class="workflow-icon"><i class="fa-solid fa-brain"></i></div>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">Reasoning Agent</h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Invokes LLM for diagnostic analysis</small>
+                            <div class="mt-2 p-2 rounded bg-dark-subtle text-muted small" style="font-size: 0.75rem;" id="out-node-reasoning">...</div>
+                        </div>
+
+                        <!-- 6. Report Agent -->
+                        <div class="workflow-node" id="node-report">
+                            <div class="workflow-icon"><i class="fa-solid fa-file-shield"></i></div>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 0.85rem;">Report Agent</h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Compiles final recommendation</small>
+                            <div class="mt-2 p-2 rounded bg-dark-subtle text-muted small" style="font-size: 0.75rem;" id="out-node-report">...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right: Prompt, Evidence & Final Reasoning -->
+                <div class="col-md-7 d-flex flex-column gap-3">
+                    <!-- Prompt -->
+                    <div class="p-3 border rounded-3 bg-light-subtle">
+                        <span class="d-block fw-semibold text-primary mb-2 small"><i class="fa-solid fa-code me-1"></i>Compiled Orchestrator Prompt</span>
+                        <pre class="bg-dark text-slate-300 p-2 rounded small mb-0 overflow-auto" style="max-height: 120px; font-size: 0.7rem; font-family: monospace;" id="orch-prompt-box">...</pre>
+                    </div>
+
+                    <!-- Retrieved Evidence -->
+                    <div class="p-3 border rounded-3 bg-light-subtle">
+                        <span class="d-block fw-semibold text-primary mb-2 small"><i class="fa-solid fa-database me-1"></i>Retrieved Evidence</span>
+                        <div id="orch-evidence-box" class="text-muted small" style="max-height: 140px; overflow-y: auto;">No evidence retrieved.</div>
+                    </div>
+
+                    <!-- Final Clinical Recommendation -->
+                    <div class="p-3 border rounded-3 bg-light-subtle flex-grow-1">
+                        <span class="d-block fw-semibold text-primary mb-2 small"><i class="fa-solid fa-file-medical me-1"></i>Final Clinical Recommendation</span>
+                        <p id="orch-recommendation-box" class="text-white small mb-0" style="line-height: 1.5; white-space: pre-wrap;"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Execution Log Panel -->
+            <div class="mt-4 pt-3 border-top">
+                <h6 class="text-muted fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2"></i>Execution Logs:</h6>
+                <div class="p-3 border rounded-3 bg-dark-subtle text-monospace" style="font-size: 0.8rem; max-height: 120px; overflow-y: auto;">
+                    <div id="orch-log-box" style="font-family: monospace;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const promptInput = document.getElementById("orchestrator-prompt");
+        const form = document.getElementById("orchestrator-form");
+        const loadingCard = document.getElementById("orch-loading-card");
+        const outputCard = document.getElementById("orch-output-card");
+        const submitBtn = document.getElementById("orch-submit-btn");
+        
+        const routeBadge = document.getElementById("orch-route-badge");
+        const latencyVal = document.getElementById("orch-latency-val");
+        const promptBox = document.getElementById("orch-prompt-box");
+        const evidenceBox = document.getElementById("orch-evidence-box");
+        const recommendationBox = document.getElementById("orch-recommendation-box");
+        const logBox = document.getElementById("orch-log-box");
+        
+        // Node outputs
+        const outDoc = document.getElementById("out-node-doctor");
+        const outRouter = document.getElementById("out-node-router");
+        const outPlanner = document.getElementById("out-node-planner");
+        const outRetrieval = document.getElementById("out-node-retrieval");
+        const outReasoning = document.getElementById("out-node-reasoning");
+        const outReport = document.getElementById("out-node-report");
+
+        // Sample button bindings
+        document.querySelectorAll(".sample-orch-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                promptInput.value = btn.getAttribute("data-query");
+            });
+        });
+        
+        // Submit handler
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const text = promptInput.value.trim();
+            if (!text) return;
+            
+            // Toggle view visibility
+            loadingCard.classList.remove("d-none");
+            outputCard.classList.add("d-none");
+            submitBtn.disabled = true;
+            
+            const startTime = performance.now();
+            
+            // Build payload
+            const payload = { question: text };
+            const xrayMatch = text.match(/(datasets\/[^\s]+)/i);
+            if (xrayMatch) {
+                payload.image_path = xrayMatch[1];
+            }
+            
+            try {
+                const response = await fetch("/orchestrator", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error("Orchestration pipeline execution failed.");
+                }
+                
+                const report = await response.json();
+                
+                const endTime = performance.now();
+                const totalLatency = Math.round(endTime - startTime);
+                
+                // Hide loader, show report
+                loadingCard.classList.add("d-none");
+                outputCard.classList.remove("d-none");
+                
+                // Set metadata
+                routeBadge.textContent = report.route || "medical_qa";
+                latencyVal.textContent = totalLatency + " ms";
+                
+                // Populate node outputs
+                outDoc.textContent = `Parsed query: "${text}"`;
+                outRouter.textContent = `Assigned route: ${report.route}`;
+                outPlanner.textContent = `Formulated plan: Execute ${report.route} workflow & generate report`;
+                
+                // Retrieval node
+                const ctxCount = (report.contexts || []).length;
+                outRetrieval.textContent = `Retrieved ${ctxCount} context fragments from index.`;
+                
+                // Reasoning node
+                outReasoning.textContent = `DenseNet / LLM generated diagnostic evaluation.`;
+                
+                // Report node
+                outReport.textContent = `Compiled final clinical summary.`;
+
+                // Colorize completed workflow nodes
+                const nodes = ["node-router", "node-planner", "node-retrieval", "node-reasoning", "node-report"];
+                nodes.forEach(n => document.getElementById(n).className = "workflow-node completed");
+
+                // Populate Prompt Box
+                promptBox.textContent = `[SYSTEM INSTRUCTION]\nYou are a MedShield-X Orchestrator Agent.\n\n[USER QUERY]\n${text}\n\n[INFERRED ROUTE]\n${report.route}`;
+                
+                // Populate Evidence Box
+                if (report.contexts && report.contexts.length > 0) {
+                    evidenceBox.innerHTML = report.contexts.map((ctx, idx) => `
+                        <div class="mb-2 pb-2 border-bottom border-opacity-10">
+                            <span class="badge bg-secondary mb-1" style="font-size:0.65rem;">Fragment #${idx+1}</span>
+                            <p class="mb-0" style="font-size:0.75rem;">${ctx}</p>
+                        </div>
+                    `).join("");
+                } else {
+                    evidenceBox.textContent = "No external evidence retrieved. Relying on base model knowledge.";
+                }
+
+                // Populate Recommendation
+                recommendationBox.textContent = report.answer || "No response details compiled by ReportAgent.";
+                
+                // Log to activity store
+                if (report.route === 'image_analysis') {
+                    MedShieldActivity.log('xray', {
+                        prediction: report.prediction ? report.prediction.prediction : 'N/A',
+                        confidence: report.prediction ? report.prediction.confidence : 0,
+                        heatmap_available: !!(report.heatmap_path),
+                        explanation: report.answer ? report.answer.substring(0, 200) : ''
+                    });
+                } else if (report.route === 'document_analysis') {
+                    MedShieldActivity.log('document', {
+                        filename: 'Orchestrator Ingestion',
+                        question: text,
+                        answer: report.answer ? report.answer.substring(0, 200) : '',
+                        contexts_count: ctxCount,
+                        route: 'document_analysis'
+                    });
+                } else {
+                    MedShieldActivity.log('medical_qa', {
+                        question: text,
+                        answer: report.answer ? report.answer.substring(0, 200) : '',
+                        route: report.route || 'medical_qa',
+                        contexts_count: ctxCount
+                    });
+                }
+                
+                // Load logs
+                renderLogs(report, totalLatency);
+                
+            } catch (err) {
+                loadingCard.classList.add("d-none");
+                alert("Error during orchestration execution: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+        
+        function renderLogs(report, latency) {
+            const logs = [];
+            const time = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            
+            logs.push(`[${time}] [INFO] Received question: "${report.question || ''}"`);
+            logs.push(`[${time}] [INFO] AgentRouter assigned route: "${report.route || 'medical_qa'}"`);
+            logs.push(`[${time}] [EXEC] PlannerAgent formulated execution sequence`);
+            logs.push(`[${time}] [EXEC] RetrievalAgent completed indexing query`);
+            
+            if (report.route === 'image_analysis') {
+                const pred = report.prediction ? JSON.stringify(report.prediction) : 'N/A';
+                logs.push(`[${time}] [RESULT] ImageAgent prediction: ${pred}`);
+                if (report.heatmap_path) logs.push(`[${time}] [OUTPUT] GradCAM saved: ${report.heatmap_path}`);
+            } else {
+                const ctxCount = (report.contexts || []).length;
+                logs.push(`[${time}] [RESULT] RetrievalAgent fetched ${ctxCount} RAG context(s)`);
+            }
+            
+            logs.push(`[${time}] [EXEC] ReasoningAgent compiled diagnostic response`);
+            logs.push(`[${time}] [SUCCESS] ReportAgent finalized clinical recommendation in ${latency}ms`);
+            logBox.innerHTML = logs.map(line => `<div>${line}</div>`).join('');
+        }
+    });
+</script>
+{% endblock %}

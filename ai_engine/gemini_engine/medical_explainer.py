@@ -1,5 +1,5 @@
-from ai_engine.gemini_engine.gemini_service import (
-    GeminiService
+from ai_engine.groq_engine.groq_service import (
+    GroqService
 )
 
 
@@ -7,8 +7,8 @@ class MedicalExplainer:
 
     def __init__(self):
 
-        self.gemini = (
-            GeminiService()
+        self.llm = (
+            GroqService()
         )
 
     def explain(
@@ -32,9 +32,22 @@ Provide:
 2. Possible Findings
 3. Recommendation
 
-Keep response concise.
+Keep response concise and professional.
+
+Output Format:
+
+Clinical Interpretation:
+...
+
+Possible Findings:
+• ...
+• ...
+
+Recommendation:
+• ...
+• ...
 """
 
-        return self.gemini.ask(
+        return self.llm.ask(
             prompt
         )

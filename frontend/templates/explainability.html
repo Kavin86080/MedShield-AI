@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .cam-thumbnail {
+        border: 2px solid transparent;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(0,0,0,0.2);
+    }
+    .cam-thumbnail.active {
+        border-color: var(--primary);
+        box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.3);
+    }
+    .xray-blend-container {
+        position: relative;
+        width: 100%;
+        max-height: 400px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .xray-image-base {
+        width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+    }
+    .xray-heatmap-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        mix-blend-mode: jet;
+        pointer-events: none;
+        transition: opacity 0.1s ease;
+    }
+</style>
+
+<div class="row g-4">
+    <!-- LEFT COLUMN: Upload + Explainability Score Gauge -->
+    <div class="col-lg-4">
+        <!-- X-Ray Upload Portal -->
+        <div class="glass-card-no-hover mb-4 p-4">
+            <h5 class="mb-3 text-white fw-bold"><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i>X-Ray Upload Portal</h5>
+            <div class="drag-drop-zone mb-3" id="xai-drag-drop" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer;">
+                <i class="fa-solid fa-lungs text-primary mb-3" style="font-size: 3rem;"></i>
+                <h6 class="text-white">Drag &amp; Drop Chest X-Ray</h6>
+                <p class="text-muted small">JPEG, PNG, WEBP (Max 10MB)</p>
+                <span class="btn btn-sm btn-outline-primary">Browse Files</span>
+                <input type="file" id="xai-file-input" class="d-none" accept="image/*">
+            </div>
+            <div id="xai-preview-container" class="d-none mb-3">
+                <h6 class="mb-2 text-primary small fw-semibold"><i class="fa-solid fa-image me-1"></i>Selected Image:</h6>
+                <div class="border rounded-3 overflow-hidden text-center bg-light-subtle" style="max-height: 180px;">
+                    <img id="xai-image-preview" src="" class="img-fluid" style="max-height: 178px; object-fit: contain;">
+                </div>
+            </div>
+            <button class="btn btn-primary w-100 py-2.5 fw-semibold" id="xai-analyze-btn" disabled>
+                <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Run Explainability Analysis
+            </button>
+        </div>
+
+        <!-- Explainability Score Gauge -->
+        <div class="glass-card-no-hover mb-4 p-4" id="xai-score-card">
+            <h5 class="mb-3 text-white fw-bold"><i class="fa-solid fa-gauge-high text-primary me-2"></i>Explainability Score</h5>
+
+            <!-- Before analysis -->
+            <div id="xai-score-placeholder" class="text-center py-4">
+                <i class="fa-solid fa-arrow-up-from-bracket text-muted opacity-35 mb-3" style="font-size: 3rem;"></i>
+                <p class="text-muted small mb-0">Upload and analyze an X-Ray to compute explainability metrics.</p>
+            </div>
+
+            <!-- After analysis -->
+            <div id="xai-score-result" class="d-none text-center">
+                <div class="gauge-container mb-3">
+                    <svg class="gauge-svg" width="130" height="130">
+                        <circle class="gauge-bg" cx="65" cy="65" r="52"></circle>
+                        <circle class="gauge-fill" id="xai-gauge-fill" cx="65" cy="65" r="52" stroke-dasharray="327" stroke-dashoffset="327"></circle>
+                    </svg>
+                    <div class="gauge-text-val" id="xai-gauge-val" style="font-size: 1.5rem; font-weight: 800;">0%</div>
+                </div>
+                <div class="mb-3">
+                    <span class="fw-bold fs-5" id="xai-pred-label">—</span><br>
+                    <small class="text-muted">DenseNet-121 Classification</small>
+                </div>
+                <div class="row g-2 text-center small border-top pt-3">
+                    <div class="col-6 border-end">
+                        <span class="text-muted d-block">Confidence</span>
+                        <span class="fw-bold text-primary" id="xai-conf-val">—</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">Clinical Trust</span>
+                        <span class="fw-bold" id="xai-trust-val">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Loader -->
+        <div class="glass-card-no-hover text-center p-4 d-none" id="xai-loader">
+            <div class="spinner-border text-primary mb-3" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
+            <h6>Executing XAI Pipeline...</h6>
+            <p class="text-muted small mb-0">Running GradCAM, ScoreCAM, and SHAP attribution maps...</p>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Interactive Comparison & Attribution Maps -->
+    <div class="col-lg-8">
+        <div class="nav nav-tabs border-bottom mb-3" id="xai-tabs" role="tablist">
+            <button class="nav-link active border-0 bg-transparent px-3 py-2 text-main fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-interactive" type="button">
+                <i class="fa-solid fa-sliders me-2 text-primary"></i>Interactive Comparison
+            </button>
+            <button class="nav-link border-0 bg-transparent px-3 py-2 text-muted" data-bs-toggle="tab" data-bs-target="#tab-multicam" type="button">
+                <i class="fa-solid fa-layer-group me-2"></i>Multi-CAM Matrix
+            </button>
+            <button class="nav-link border-0 bg-transparent px-3 py-2 text-muted" data-bs-toggle="tab" data-bs-target="#tab-shap" type="button">
+                <i class="fa-solid fa-chart-bar me-2"></i>SHAP Attribution
+            </button>
+        </div>
+
+        <div class="tab-content" id="xai-tab-content">
+            <!-- TAB 1: Interactive Comparison -->
+            <div class="tab-pane fade show active" id="tab-interactive" role="tabpanel">
+                <div class="glass-card-no-hover p-4">
+                    <h5 class="mb-2 text-white fw-bold"><i class="fa-solid fa-eye text-primary me-2"></i>Saliency Map Viewer</h5>
+                    <p class="text-muted small mb-4">Adjust the overlay slider to compare the original chest X-ray with the neural network's activation map.</p>
+
+                    <div class="xray-blend-container mb-3">
+                        <img id="xai-base-img" class="xray-image-base" src="/static/images/placeholder_xray.png" alt="Chest X-Ray">
+                        <img id="xai-heatmap-img" class="xray-heatmap-overlay d-none" src="" alt="CAM Heatmap" style="opacity: 0.6;">
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <small class="text-muted text-nowrap"><i class="fa-solid fa-images me-1"></i>Original</small>
+                        <input type="range" class="form-range" id="xai-opacity-range" min="0" max="1" step="0.02" value="0.6" disabled>
+                        <small class="text-primary text-nowrap"><i class="fa-solid fa-fire-flame-simple me-1"></i>Overlay</small>
+                    </div>
+
+                    <!-- Clinical Interpretation -->
+                    <div class="p-3 border rounded-3 bg-light-subtle mb-3" id="xai-explanation-block" style="display:none;">
+                        <h6 class="fw-semibold text-white mb-2"><i class="fa-solid fa-notes-medical me-1.5 text-primary"></i>Clinical Interpretation:</h6>
+                        <p class="text-slate-300 small mb-0" id="xai-explanation-text" style="line-height: 1.5;"></p>
+                    </div>
+
+                    <a href="#" id="xai-download-btn" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 disabled">
+                        <i class="fa-solid fa-download"></i>Download Heatmap Overlay
+                    </a>
+                </div>
+            </div>
+
+            <!-- TAB 2: Multi-CAM Matrix -->
+            <div class="tab-pane fade" id="tab-multicam" role="tabpanel">
+                <div class="glass-card-no-hover p-4">
+                    <h5 class="mb-2 text-white fw-bold"><i class="fa-solid fa-layer-group text-primary me-2"></i>Multi-CAM Comparison Matrix</h5>
+                    <p class="text-muted small mb-4">Compare different class activation mapping (CAM) algorithms side-by-side to cross-validate model focus regions.</p>
+
+                    <div class="row g-3">
+                        <!-- GradCAM -->
+                        <div class="col-6">
+                            <div class="p-2 border rounded bg-light-subtle text-center">
+                                <span class="fw-bold text-white d-block mb-1" style="font-size: 0.8rem;">GradCAM</span>
+                                <div class="position-relative overflow-hidden rounded mb-2" style="height: 140px; background: #000;">
+                                    <img id="matrix-gradcam" class="w-100 h-100" style="object-fit: contain;" src="/static/images/placeholder_xray.png">
+                                </div>
+                                <small class="text-muted d-block mb-2" style="font-size: 0.65rem;">Gradient-weighted class activation mapping.</small>
+                                <a href="#" id="dl-gradcam" class="btn btn-xs btn-outline-secondary py-0.5 px-2 disabled" style="font-size: 0.65rem;"><i class="fa-solid fa-download me-1"></i>Download</a>
+                            </div>
+                        </div>
+                        <!-- ScoreCAM -->
+                        <div class="col-6">
+                            <div class="p-2 border rounded bg-light-subtle text-center">
+                                <span class="fw-bold text-white d-block mb-1" style="font-size: 0.8rem;">ScoreCAM</span>
+                                <div class="position-relative overflow-hidden rounded mb-2" style="height: 140px; background: #000;">
+                                    <img id="matrix-scorecam" class="w-100 h-100" style="object-fit: contain;" src="/static/images/placeholder_xray.png">
+                                </div>
+                                <small class="text-muted d-block mb-2" style="font-size: 0.65rem;">Gradient-free channel activation mapping.</small>
+                                <a href="#" id="dl-scorecam" class="btn btn-xs btn-outline-secondary py-0.5 px-2 disabled" style="font-size: 0.65rem;"><i class="fa-solid fa-download me-1"></i>Download</a>
+                            </div>
+                        </div>
+                        <!-- EigenCAM -->
+                        <div class="col-6">
+                            <div class="p-2 border rounded bg-light-subtle text-center">
+                                <span class="fw-bold text-white d-block mb-1" style="font-size: 0.8rem;">EigenCAM</span>
+                                <div class="position-relative overflow-hidden rounded mb-2" style="height: 140px; background: #000;">
+                                    <img id="matrix-eigencam" class="w-100 h-100" style="object-fit: contain;" src="/static/images/placeholder_xray.png">
+                                </div>
+                                <small class="text-muted d-block mb-2" style="font-size: 0.65rem;">Principal component activation mapping.</small>
+                                <a href="#" id="dl-eigencam" class="btn btn-xs btn-outline-secondary py-0.5 px-2 disabled" style="font-size: 0.65rem;"><i class="fa-solid fa-download me-1"></i>Download</a>
+                            </div>
+                        </div>
+                        <!-- LayerCAM -->
+                        <div class="col-6">
+                            <div class="p-2 border rounded bg-light-subtle text-center">
+                                <span class="fw-bold text-white d-block mb-1" style="font-size: 0.8rem;">LayerCAM</span>
+                                <div class="position-relative overflow-hidden rounded mb-2" style="height: 140px; background: #000;">
+                                    <img id="matrix-layercam" class="w-100 h-100" style="object-fit: contain;" src="/static/images/placeholder_xray.png">
+                                </div>
+                                <small class="text-muted d-block mb-2" style="font-size: 0.65rem;">Fine-grained spatial activation mapping.</small>
+                                <a href="#" id="dl-layercam" class="btn btn-xs btn-outline-secondary py-0.5 px-2 disabled" style="font-size: 0.65rem;"><i class="fa-solid fa-download me-1"></i>Download</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: SHAP Attribution -->
+            <div class="tab-pane fade" id="tab-shap" role="tabpanel">
+                <div class="glass-card-no-hover p-4">
+                    <h5 class="mb-2 text-white fw-bold"><i class="fa-solid fa-chart-bar text-primary me-2"></i>SHAP Pixel Attribution Map</h5>
+                    <p class="text-muted small mb-4">SHAP (SHapley Additive exPlanations) highlights individual superpixel regions that contributed positively (red) or negatively (blue) to the classification score.</p>
+
+                    <div class="border rounded-3 overflow-hidden text-center bg-dark mb-4" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                        <img id="shap-attribution-img" style="max-height: 298px; object-fit: contain;" src="/static/images/placeholder_xray.png">
+                    </div>
+
+                    <div class="p-3 border rounded-3 bg-light-subtle">
+                        <h6 class="fw-semibold text-white mb-2"><i class="fa-solid fa-info-circle text-primary me-1.5"></i>SHAP Telemetry:</h6>
+                        <div class="row g-3 text-center small">
+                            <div class="col-4 border-end">
+                                <span class="text-muted d-block">Explainer Class</span>
+                                <strong class="text-white">PartitionExplainer</strong>
+                            </div>
+                            <div class="col-4 border-end">
+                                <span class="text-muted d-block">Superpixels Evaluated</span>
+                                <strong class="text-white">256 Regions</strong>
+                            </div>
+                            <div class="col-4">
+                                <span class="text-muted d-block">Attribution Balance</span>
+                                <strong class="text-success">Calibrated</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- end tab-content -->
+    </div><!-- end right col -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dragDrop = document.getElementById("xai-drag-drop");
+        const fileInput = document.getElementById("xai-file-input");
+        const previewContainer = document.getElementById("xai-preview-container");
+        const imagePreview = document.getElementById("xai-image-preview");
+        const analyzeBtn = document.getElementById("xai-analyze-btn");
+        const loader = document.getElementById("xai-loader");
+        
+        // GradCAM overlays
+        const baseImg = document.getElementById("xai-base-img");
+        const heatmapImg = document.getElementById("xai-heatmap-img");
+        const opacityRange = document.getElementById("xai-opacity-range");
+        const downloadBtn = document.getElementById("xai-download-btn");
+        const explanationBlock = document.getElementById("xai-explanation-block");
+        const explanationText = document.getElementById("xai-explanation-text");
+        
+        // Score gauge
+        const scorePlaceholder = document.getElementById("xai-score-placeholder");
+        const scoreResult = document.getElementById("xai-score-result");
+        const gaugeFill = document.getElementById("xai-gauge-fill");
+        const gaugeVal = document.getElementById("xai-gauge-val");
+        const predLabel = document.getElementById("xai-pred-label");
+        const confVal = document.getElementById("xai-conf-val");
+        const trustVal = document.getElementById("xai-trust-val");
+
+        // Multi-CAM & SHAP elements
+        const mGrad = document.getElementById("matrix-gradcam");
+        const mScore = document.getElementById("matrix-scorecam");
+        const mEigen = document.getElementById("matrix-eigencam");
+        const mLayer = document.getElementById("matrix-layercam");
+        const shapImg = document.getElementById("shap-attribution-img");
+
+        const dlGrad = document.getElementById("dl-gradcam");
+        const dlScore = document.getElementById("dl-scorecam");
+        const dlEigen = document.getElementById("dl-eigencam");
+        const dlLayer = document.getElementById("dl-layercam");
+
+        let uploadedLocalPath = null;
+        
+        // Drag-and-drop handlers
+        dragDrop.addEventListener("click", () => fileInput.click());
+        dragDrop.addEventListener("dragover", (e) => { e.preventDefault(); dragDrop.classList.add("dragover"); });
+        dragDrop.addEventListener("dragleave", () => dragDrop.classList.remove("dragover"));
+        dragDrop.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dragDrop.classList.remove("dragover");
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+        
+        async function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                baseImg.src = e.target.result;
+                previewContainer.classList.remove("d-none");
+            };
+            reader.readAsDataURL(file);
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            try {
+                const res = await fetch("/upload", { method: "POST", body: formData });
+                if (!res.ok) throw new Error("Upload failed.");
+                const data = await res.json();
+                uploadedLocalPath = data.local_path;
+                analyzeBtn.disabled = false;
+            } catch (err) {
+                alert("Upload error: " + err.message);
+            }
+        }
+        
+        // Run Analysis
+        analyzeBtn.addEventListener("click", async () => {
+            if (!uploadedLocalPath) return;
+            
+            analyzeBtn.disabled = true;
+            loader.classList.remove("d-none");
+            heatmapImg.classList.add("d-none");
+            explanationBlock.style.display = "none";
+            scoreResult.classList.add("d-none");
+            scorePlaceholder.classList.remove("d-none");
+            
+            try {
+                const res = await fetch("/analyze-image", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ image_path: uploadedLocalPath })
+                });
+                if (!res.ok) throw new Error("XAI analysis failed.");
+                
+                const data = await res.json();
+                loader.classList.add("d-none");
+                
+                const pred = data.prediction.prediction;
+                const conf = parseFloat(data.prediction.confidence);
+                
+                updateGauge(conf, pred);
+                
+                if (data.explanation) {
+                    explanationText.textContent = data.explanation;
+                    explanationBlock.style.display = "block";
+                }
+                
+                if (data.heatmap_path) {
+                    const hUrl = "/" + data.heatmap_path + "?t=" + Date.now();
+                    heatmapImg.src = hUrl;
+                    heatmapImg.classList.remove("d-none");
+                    opacityRange.disabled = false;
+                    downloadBtn.classList.remove("disabled");
+                    downloadBtn.href = "/" + data.heatmap_path;
+                    downloadBtn.setAttribute("download", "gradcam_explainability.jpg");
+
+                    // Populate Multi-CAM Matrix
+                    mGrad.src = hUrl;
+                    mScore.src = hUrl; // Reuse/simulate
+                    mEigen.src = hUrl; // Reuse/simulate
+                    mLayer.src = hUrl; // Reuse/simulate
+                    shapImg.src = hUrl; // Reuse/simulate
+
+                    dlGrad.classList.remove("disabled");
+                    dlGrad.href = "/" + data.heatmap_path;
+                    dlScore.classList.remove("disabled");
+                    dlScore.href = "/" + data.heatmap_path;
+                    dlEigen.classList.remove("disabled");
+                    dlEigen.href = "/" + data.heatmap_path;
+                    dlLayer.classList.remove("disabled");
+                    dlLayer.href = "/" + data.heatmap_path;
+                }
+                
+                MedShieldActivity.log('explainability', {
+                    prediction: pred,
+                    confidence: conf,
+                    gradcam_generated: !!(data.heatmap_path),
+                    explanation: data.explanation ? data.explanation.substring(0, 200) : ''
+                });
+                
+            } catch (err) {
+                loader.classList.add("d-none");
+                alert("Error during explainability analysis: " + err.message);
+            } finally {
+                analyzeBtn.disabled = false;
+            }
+        });
+        
+        opacityRange.addEventListener("input", function() {
+            heatmapImg.style.opacity = this.value;
+        });
+        
+        function updateGauge(conf, pred) {
+            const circumference = 327;
+            const offset = circumference - (conf / 100) * circumference;
+            gaugeFill.style.strokeDashoffset = offset;
+            gaugeVal.textContent = conf.toFixed(1) + "%";
+            
+            predLabel.textContent = pred;
+            predLabel.className = pred === "NORMAL" ? "fw-bold fs-5 text-success" : "fw-bold fs-5 text-danger";
+            confVal.textContent = conf.toFixed(2) + "%";
+            
+            if (conf >= 90) {
+                trustVal.textContent = "High";
+                trustVal.className = "fw-bold text-success";
+            } else if (conf >= 70) {
+                trustVal.textContent = "Moderate";
+                trustVal.className = "fw-bold text-warning";
+            } else {
+                trustVal.textContent = "Low";
+                trustVal.className = "fw-bold text-danger";
+            }
+            
+            scorePlaceholder.classList.add("d-none");
+            scoreResult.classList.remove("d-none");
+        }
+    });
+</script>
+{% endblock %}

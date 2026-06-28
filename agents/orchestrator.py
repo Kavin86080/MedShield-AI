@@ -1,5 +1,5 @@
-from rag.pipelines.rag_pipeline import (
-    RAGPipeline
+from rag.pipelines.medical_rag_pipeline import (
+    MedicalRAGPipeline
 )
 
 from agents.agent_state import (
@@ -37,7 +37,8 @@ from agents.image_agent import (
 
 class AgentOrchestrator:
 
-    def __init__(self):
+    def __init__(self): 
+        print( "\nAgentOrchestrator Initialized" )
 
         # -------------------------
         # Router
@@ -46,36 +47,23 @@ class AgentOrchestrator:
         self.router = AgentRouter()
 
         # -------------------------
-        # Traditional Medical QA
+        # Medical Knowledge Base
         # -------------------------
 
-        self.rag_pipeline = (
-            RAGPipeline()
+        print(
+            "\nLOADING MEDICAL KNOWLEDGE BASE..."
         )
 
-        documents = [
+        self.rag_pipeline = (
+            MedicalRAGPipeline()
+        )
 
-            """
-            Pneumonia is a lung infection that causes
-            fever, cough and breathing difficulty.
-            """,
+        self.rag_pipeline.index_medical_knowledge(
+            "datasets/medical_knowledge"
+        )
 
-            """
-            Diabetes is a chronic disease affecting
-            blood glucose regulation.
-            """,
-
-            """
-            Hypertension is persistent high blood pressure.
-            """,
-
-            """
-            Asthma causes inflammation of airways.
-            """
-        ]
-
-        self.rag_pipeline.index_documents(
-            documents
+        print(
+            "\nMEDICAL KNOWLEDGE BASE READY"
         )
 
         # -------------------------
@@ -104,13 +92,23 @@ class AgentOrchestrator:
         # Document Agent
         # -------------------------
 
-        self.document_agent = (
-            DocumentAgent()
-        )
+        try:
 
-        self.document_agent.load_document(
-            "datasets/reports/medisense_paper.pdf"
-        )
+           self.document_agent = (
+               DocumentAgent()
+           )
+
+           print(
+               "\nDOCUMENT AGENT READY"
+           )
+
+        except Exception as e:
+
+            print(
+                f"\nDOCUMENT AGENT FAILED: {e}"
+            )
+
+            self.document_agent = None
 
         # -------------------------
         # Image Agent
@@ -126,7 +124,7 @@ class AgentOrchestrator:
     ):
 
         # =========================
-        # Step 1: Route Question
+        # Route Question
         # =========================
 
         state = self.router.run(
@@ -147,6 +145,22 @@ class AgentOrchestrator:
             "document_analysis"
         ):
 
+            if self.document_agent is None:
+
+                state.answer = (
+                    "Document Analysis Agent is unavailable."
+                )
+
+                state = (
+                    self.report.run(
+                        state
+                    )
+                )
+
+                return (
+                    state.report
+                )
+
             state = (
                 self.document_agent.run(
                     state
@@ -162,14 +176,13 @@ class AgentOrchestrator:
             return (
                 state.report
             )
-
         # =========================
         # IMAGE ANALYSIS
         # =========================
 
         elif route == (
             "image_analysis"
-        ):
+        ): 
 
             state = (
                 self.image_agent.run(
@@ -196,7 +209,7 @@ class AgentOrchestrator:
         ):
 
             state.answer = (
-                "Report Generation Agent will be implemented in Phase 8."
+                "Report Generation Agent will be implemented in Phase 10."
             )
 
             state = (

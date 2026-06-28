@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Header Row -->
+    <div class="col-12">
+        <div class="glass-card-no-hover py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h4 class="mb-0 fw-bold"><i class="fa-solid fa-folder-open text-primary me-2"></i>Consultation Board</h4>
+                <small class="text-muted">Manage patient sessions, open workspaces, and close completed consultations.</small>
+            </div>
+            <button class="btn btn-primary fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#newConsultationModal">
+                <i class="fa-solid fa-user-plus me-2"></i>New Patient Session
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Session Banner -->
+    <div class="col-12 d-none" id="active-session-banner">
+        <div class="alert alert-primary py-2 px-4 d-flex align-items-center gap-3 mb-0" style="border-radius: 12px;">
+            <i class="fa-solid fa-circle-dot text-primary fa-beat"></i>
+            <span>Active session: <strong id="banner-patient-name">—</strong> &nbsp;|&nbsp; Click <strong>Open Workspace</strong> to switch context.</span>
+            <button class="btn btn-sm btn-outline-danger ms-auto py-1" id="clear-session-btn">
+                <i class="fa-solid fa-xmark me-1"></i>Clear Session
+            </button>
+        </div>
+    </div>
+
+    <!-- Consultations Table -->
+    <div class="col-12">
+        <div class="glass-card-no-hover">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="input-group" style="max-width: 320px;">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" class="form-control form-control-premium border-start-0" id="search-consultations" placeholder="Search by patient name...">
+                </div>
+                <select class="form-select form-control-premium" id="filter-status" style="max-width: 160px;">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="consultations-table">
+                    <thead class="border-bottom">
+                        <tr style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                            <th class="fw-semibold">Patient</th>
+                            <th class="fw-semibold">Age / Gender</th>
+                            <th class="fw-semibold">Status</th>
+                            <th class="fw-semibold">Started</th>
+                            <th class="fw-semibold text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="consultations-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted" id="consultations-loading">
+                                <i class="fa-solid fa-circle-notch fa-spin me-2"></i>Loading consultations...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Consultation Modal -->
+<div class="modal fade" id="newConsultationModal" tabindex="-1" aria-labelledby="newConsultationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border border-opacity-10 text-main" style="background: var(--bg-card); border-radius: 16px;">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="newConsultationModalLabel">
+                    <i class="fa-solid fa-user-plus text-primary me-2"></i>New Patient Consultation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="new-consultation-form">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new-patient-name" class="form-label small fw-semibold">Patient Full Name</label>
+                        <input type="text" class="form-control form-control-premium" id="new-patient-name" required placeholder="e.g. Sarah Thompson">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label for="new-patient-age" class="form-label small fw-semibold">Age</label>
+                            <input type="number" class="form-control form-control-premium" id="new-patient-age" required placeholder="e.g. 38" min="0" max="130">
+                        </div>
+                        <div class="col-6">
+                            <label for="new-patient-gender" class="form-label small fw-semibold">Gender</label>
+                            <select class="form-select form-control-premium" id="new-patient-gender" required>
+                                <option value="">Select...</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other / Unspecified</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="new-consultation-error" class="alert alert-danger py-2 mt-3 d-none" style="font-size: 0.8rem;"></div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary fw-semibold" id="new-consultation-submit-btn">
+                        <i class="fa-solid fa-circle-plus me-1"></i>Create Session
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Close Consultation Modal -->
+<div class="modal fade" id="closeConsultationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border border-opacity-10 text-main" style="background: var(--bg-card); border-radius: 16px;">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-circle-check text-success me-2"></i>Close Consultation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="close-consultation-form">
+                <input type="hidden" id="close-consultation-id">
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Add a final clinical summary before closing this session. This will mark the consultation as completed.</p>
+                    <div class="mb-3">
+                        <label for="close-summary" class="form-label small fw-semibold">Clinical Summary / Disposition</label>
+                        <textarea class="form-control form-control-premium" id="close-summary" rows="4" required placeholder="Enter diagnosis, treatment plan, and follow-up notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success fw-semibold" id="close-consultation-submit-btn">
+                        <i class="fa-solid fa-check me-1"></i>Close Session
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tbody = document.getElementById("consultations-tbody");
+        const searchInput = document.getElementById("search-consultations");
+        const filterStatus = document.getElementById("filter-status");
+        const activeSessionBanner = document.getElementById("active-session-banner");
+        const bannerPatientName = document.getElementById("banner-patient-name");
+        const clearSessionBtn = document.getElementById("clear-session-btn");
+
+        let allConsultations = [];
+
+        // Show active session banner if one exists
+        const activeId = localStorage.getItem("medshield_active_consultation_id");
+        const activeName = localStorage.getItem("medshield_active_consultation_patient_name");
+        if (activeId && activeName) {
+            activeSessionBanner.classList.remove("d-none");
+            bannerPatientName.textContent = activeName;
+        }
+
+        clearSessionBtn.addEventListener("click", () => {
+            localStorage.removeItem("medshield_active_consultation_id");
+            localStorage.removeItem("medshield_active_consultation_patient_name");
+            localStorage.removeItem("medshield_active_consultation_patient_age");
+            localStorage.removeItem("medshield_active_consultation_patient_gender");
+            activeSessionBanner.classList.add("d-none");
+            renderTable(allConsultations);
+        });
+
+        // Load consultations
+        async function loadConsultations() {
+            try {
+                const response = await fetch("/api/consultations", {
+                    headers: { "Authorization": "Bearer " + localStorage.getItem("medshield_access_token") }
+                });
+                if (!response.ok) {
+                    if (response.status === 401) { window.location.href = "/login"; return; }
+                    throw new Error("Failed to load consultations.");
+                }
+                allConsultations = await response.json();
+                renderTable(allConsultations);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger small"><i class="fa-solid fa-triangle-exclamation me-1"></i>${err.message}</td></tr>`;
+            }
+        }
+
+        function renderTable(data) {
+            const searchTerm = searchInput.value.toLowerCase();
+            const statusFilter = filterStatus.value;
+
+            const filtered = data.filter(c => {
+                const nameMatch = c.patient_name.toLowerCase().includes(searchTerm);
+                const statusMatch = !statusFilter || c.status === statusFilter;
+                return nameMatch && statusMatch;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted small"><i class="fa-solid fa-folder-open me-1"></i>No consultations found.</td></tr>`;
+                return;
+            }
+
+            const currentActiveId = localStorage.getItem("medshield_active_consultation_id");
+
+            tbody.innerHTML = filtered.map(c => {
+                const isActive = String(c.id) === currentActiveId;
+                const date = new Date(c.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                const statusBadge = c.status === "active"
+                    ? `<span class="badge badge-premium badge-premium-success">Active</span>`
+                    : `<span class="badge badge-premium badge-premium-primary">Completed</span>`;
+                const openBtnStyle = isActive ? "btn-primary" : "btn-outline-primary";
+                const openBtnText = isActive ? `<i class="fa-solid fa-circle-dot fa-beat me-1"></i>Active` : `<i class="fa-solid fa-folder-open me-1"></i>Open`;
+
+                return `
+                    <tr class="${isActive ? 'table-active-row' : ''}">
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="chat-avatar user-avatar" style="width: 34px; height: 34px; font-size: 0.8rem; flex-shrink: 0;">
+                                    ${c.patient_name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2)}
+                                </div>
+                                <div>
+                                    <strong class="d-block" style="font-size: 0.9rem;">${c.patient_name}</strong>
+                                    ${c.summary ? `<small class="text-muted text-truncate d-block" style="max-width:200px; font-size:0.75rem;">${c.summary}</small>` : ""}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-muted" style="font-size: 0.85rem;">${c.patient_age} / ${c.patient_gender}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-muted" style="font-size: 0.85rem;">${date}</td>
+                        <td class="text-end">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <button class="btn btn-sm ${openBtnStyle} py-1 open-workspace-btn"
+                                    data-id="${c.id}"
+                                    data-name="${c.patient_name}"
+                                    data-age="${c.patient_age}"
+                                    data-gender="${c.patient_gender}">
+                                    ${openBtnText}
+                                </button>
+                                ${c.status === "active" ? `
+                                <button class="btn btn-sm btn-outline-success py-1 close-consultation-btn" data-id="${c.id}">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>` : ""}
+                                <button class="btn btn-sm btn-outline-danger py-1 delete-consultation-btn" data-id="${c.id}">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+            // Bind row actions
+            document.querySelectorAll(".open-workspace-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    const age = this.dataset.age;
+                    const gender = this.dataset.gender;
+                    localStorage.setItem("medshield_active_consultation_id", id);
+                    localStorage.setItem("medshield_active_consultation_patient_name", name);
+                    localStorage.setItem("medshield_active_consultation_patient_age", age);
+                    localStorage.setItem("medshield_active_consultation_patient_gender", gender);
+                    activeSessionBanner.classList.remove("d-none");
+                    bannerPatientName.textContent = name;
+                    renderTable(allConsultations);
+                });
+            });
+
+            document.querySelectorAll(".close-consultation-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    document.getElementById("close-consultation-id").value = this.dataset.id;
+                    document.getElementById("close-summary").value = "";
+                    const modal = new bootstrap.Modal(document.getElementById("closeConsultationModal"));
+                    modal.show();
+                });
+            });
+
+            document.querySelectorAll(".delete-consultation-btn").forEach(btn => {
+                btn.addEventListener("click", async function () {
+                    if (!confirm("Delete this consultation? This action cannot be undone.")) return;
+                    const id = this.dataset.id;
+                    try {
+                        const response = await fetch(`/api/consultations/${id}`, {
+                            method: "DELETE",
+                            headers: { "Authorization": "Bearer " + localStorage.getItem("medshield_access_token") }
+                        });
+                        if (response.ok) {
+                            if (localStorage.getItem("medshield_active_consultation_id") === id) {
+                                localStorage.removeItem("medshield_active_consultation_id");
+                                localStorage.removeItem("medshield_active_consultation_patient_name");
+                                localStorage.removeItem("medshield_active_consultation_patient_age");
+                                localStorage.removeItem("medshield_active_consultation_patient_gender");
+                                activeSessionBanner.classList.add("d-none");
+                            }
+                            await loadConsultations();
+                        }
+                    } catch (err) {
+                        alert("Error deleting consultation.");
+                    }
+                });
+            });
+        }
+
+        // Search / filter
+        searchInput.addEventListener("input", () => renderTable(allConsultations));
+        filterStatus.addEventListener("change", () => renderTable(allConsultations));
+
+        // New consultation form
+        document.getElementById("new-consultation-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const errorEl = document.getElementById("new-consultation-error");
+            errorEl.classList.add("d-none");
+            const submitBtn = document.getElementById("new-consultation-submit-btn");
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Creating...';
+            try {
+                const response = await fetch("/api/consultations", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    },
+                    body: JSON.stringify({
+                        patient_name: document.getElementById("new-patient-name").value,
+                        patient_age: parseInt(document.getElementById("new-patient-age").value),
+                        patient_gender: document.getElementById("new-patient-gender").value
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || "Failed to create consultation.");
+                bootstrap.Modal.getInstance(document.getElementById("newConsultationModal")).hide();
+                this.reset();
+                await loadConsultations();
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.classList.remove("d-none");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-plus me-1"></i>Create Session';
+            }
+        });
+
+        // Close consultation form
+        document.getElementById("close-consultation-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const id = document.getElementById("close-consultation-id").value;
+            const summary = document.getElementById("close-summary").value;
+            const submitBtn = document.getElementById("close-consultation-submit-btn");
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Closing...';
+            try {
+                const response = await fetch(`/api/consultations/${id}/close`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    },
+                    body: JSON.stringify({ summary })
+                });
+                if (!response.ok) throw new Error("Failed to close consultation.");
+                bootstrap.Modal.getInstance(document.getElementById("closeConsultationModal")).hide();
+                await loadConsultations();
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i>Close Session';
+            }
+        });
+
+        loadConsultations();
+    });
+</script>
+
+<style>
+.table-active-row {
+    background: rgba(var(--primary-rgb), 0.05) !important;
+    border-left: 3px solid var(--primary) !important;
+}
+</style>
+{% endblock %}

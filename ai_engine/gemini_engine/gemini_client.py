@@ -1,10 +1,12 @@
 import os
+import time
 
 import google.generativeai as genai
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 class GeminiClient:
 
@@ -17,7 +19,7 @@ class GeminiClient:
         if not api_key:
 
             raise ValueError(
-                "GEMINI_API_KEY not found in environment variables."
+                "GEMINI_API_KEY not found."
             )
 
         genai.configure(
@@ -26,20 +28,54 @@ class GeminiClient:
 
         model_name = os.getenv(
             "GEMINI_MODEL",
-            "models/gemini-2.5-flash"
+            "gemini-1.5-flash"
         )
 
-        self.model = genai.GenerativeModel(
-            model_name=model_name
+        self.model = (
+            genai.GenerativeModel(
+                model_name
+            )
         )
 
     def generate(
         self,
-        prompt: str
+        prompt: str,
+        retries: int = 3
     ) -> str:
 
-        response = self.model.generate_content(
-            prompt
-        )
+        for attempt in range(
+            retries
+        ):
 
-        return response.text
+            try:
+
+                response = (
+                    self.model.generate_content(
+                        prompt
+                    )
+                )
+
+                if hasattr(
+                    response,
+                    "text"
+                ):
+
+                    return response.text
+
+                return str(
+                    response
+                )
+
+            except Exception as e:
+
+                print(
+                    f"Gemini Attempt {attempt+1} Failed: {e}"
+                )
+
+                time.sleep(
+                    2
+                )
+
+        return (
+            "Unable to generate response from Gemini."
+        )

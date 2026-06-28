@@ -1,1 +1,78 @@
-# Placeholder for navbar.html
+<!-- MedShield-X Top Navigation Bar -->
+<nav class="navbar-premium" id="main-navbar">
+
+    <!-- Left: Mobile toggle + Breadcrumb -->
+    <div class="navbar-left">
+        <!-- Mobile sidebar toggle -->
+        <button id="mobile-sidebar-toggle-btn" class="sidebar-toggle-btn d-lg-none me-2" title="Toggle Navigation">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <!-- Page Breadcrumb -->
+        <div class="navbar-breadcrumb d-none d-sm-flex">
+            <span class="breadcrumb-root">MedShield-X</span>
+            <i class="fa-solid fa-chevron-right breadcrumb-sep"></i>
+            <span class="breadcrumb-current" id="current-page-breadcrumb">
+                {% if active_page == 'dashboard' %}Dashboard
+                {% elif active_page == 'assistant' %}Medical Assistant
+                {% elif active_page == 'orchestrator' %}Orchestrator
+                {% elif active_page == 'xray' %}X-Ray Analysis
+                {% elif active_page == 'document' %}Document Analysis
+                {% elif active_page == 'passport' %}Patient Passport
+                {% elif active_page == 'upload' %}Upload Center
+                {% elif active_page == 'reports' %}Clinical Reports
+                {% elif active_page == 'explainability' %}AI Explainability
+                {% elif active_page == 'robustness' %}Roadmap Testing
+                {% elif active_page == 'research' %}Research Analytics
+                {% elif active_page == 'evidence_explorer' %}Evidence Explorer
+                {% elif active_page == 'consultations' %}Consultations
+                {% elif active_page == 'profile' %}Doctor Profile
+                {% elif active_page == 'settings' %}Settings
+                {% else %}Overview
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Right: Badges + Status + Actions + Doctor -->
+    <div class="navbar-right">
+
+        <!-- AI Model Badge -->
+        <div class="navbar-badges d-none d-md-flex">
+            <span class="nav-badge nav-badge-primary" title="Language Model">
+                <i class="fa-solid fa-microchip"></i>
+                <span>Gemini 2.5 Flash</span>
+            </span>
+            <span class="nav-badge nav-badge-info" title="Vision Model">
+                <i class="fa-solid fa-eye"></i>
+                <span>DenseNet-121</span>
+            </span>
+        </div>
+
+        <!-- Clinical System Status -->
+        <div class="navbar-status" id="system-status-indicator" title="Backend Connection">
+            <span class="status-dot status-online" id="status-dot"></span>
+            <span class="status-label d-none d-md-inline" id="status-label">Clinical System: Connected</span>
+        </div>
+
+        <!-- Settings Icon -->
+        <a href="/settings" class="navbar-icon-btn {% if active_page == 'settings' %}active{% endif %}" title="Settings" id="navbar-settings-btn">
+            <i class="fa-solid fa-gear"></i>
+        </a>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle-btn" class="navbar-icon-btn" title="Toggle Theme">
+            <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+        </button>
+
+        <!-- Doctor Avatar (Navbar) -->
+        <a href="/profile" class="navbar-doctor-btn {% if active_page == 'profile' %}active{% endif %}" title="Doctor Profile" id="navbar-doctor-btn">
+            <div class="navbar-doctor-avatar" id="navbar-doc-avatar">DR</div>
+            <div class="navbar-doctor-info d-none d-lg-block">
+                <span class="navbar-doctor-name" id="navbar-doc-name">Doctor</span>
+                <span class="navbar-doctor-role">Clinical Expert</span>
+            </div>
+        </a>
+
+    </div>
+</nav>

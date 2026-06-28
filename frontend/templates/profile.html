@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Profile Card -->
+    <div class="col-lg-4">
+        <div class="glass-card-no-hover mb-4 text-center">
+            <div class="position-relative d-inline-block mb-3">
+                <div class="chat-avatar user-avatar mx-auto" style="width: 80px; height: 80px; font-size: 2rem;" id="profile-avatar">DR</div>
+                <span class="position-absolute bottom-0 end-0 badge bg-success rounded-pill border border-2" style="font-size: 0.6rem; padding: 4px 6px;">Online</span>
+            </div>
+            <h5 class="fw-bold mb-1" id="profile-name">Dr. Loading...</h5>
+            <span class="badge badge-premium badge-premium-primary mb-2" id="profile-specialty">Specialty</span>
+            <p class="text-muted small mb-0" id="profile-email">email@medshield.x</p>
+        </div>
+
+        <!-- Stats Card -->
+        <div class="glass-card-no-hover mb-4">
+            <h6 class="text-primary mb-3"><i class="fa-solid fa-chart-simple me-2"></i>Session Statistics</h6>
+            <div class="d-flex flex-column gap-2" style="font-size: 0.9rem;">
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Total Consultations</span>
+                    <strong id="stat-consultations">—</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Active Sessions</span>
+                    <strong id="stat-active" class="text-success">—</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Closed Sessions</span>
+                    <strong id="stat-closed">—</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="glass-card-no-hover">
+            <h6 class="text-primary mb-3"><i class="fa-solid fa-key me-2"></i>Security</h6>
+            <form id="change-password-form">
+                <div class="mb-2">
+                    <input type="password" class="form-control form-control-premium" id="current-password" placeholder="Current password" required>
+                </div>
+                <div class="mb-2">
+                    <input type="password" class="form-control form-control-premium" id="new-password" placeholder="New password (min 8 chars)" required>
+                </div>
+                <div class="mb-3">
+                    <input type="password" class="form-control form-control-premium" id="confirm-password" placeholder="Confirm new password" required>
+                </div>
+                <div class="alert alert-danger py-2 d-none" id="pw-error" style="font-size: 0.8rem;"></div>
+                <div class="alert alert-success py-2 d-none" id="pw-success" style="font-size: 0.8rem;">Password changed successfully.</div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="change-pw-btn">
+                    <i class="fa-solid fa-lock-open me-2"></i>Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Audit Logs -->
+    <div class="col-lg-8">
+        <div class="glass-card-no-hover">
+            <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-shield-halved text-primary me-2"></i>Clinical Audit Trail</h5>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-control-premium py-1" id="audit-filter" style="max-width: 160px; font-size: 0.8rem;">
+                        <option value="">All Actions</option>
+                        <option value="login">Login Events</option>
+                        <option value="consultation">Consultations</option>
+                        <option value="upload">File Uploads</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-1" id="export-audit-btn">
+                        <i class="fa-solid fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Audit log table -->
+            <div style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="border-bottom sticky-top" style="background: var(--bg-card);">
+                        <tr style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                            <th class="fw-semibold py-2">Timestamp</th>
+                            <th class="fw-semibold py-2">Event Type</th>
+                            <th class="fw-semibold py-2">Description</th>
+                            <th class="fw-semibold py-2">IP Address</th>
+                            <th class="fw-semibold py-2">Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted small">
+                                <i class="fa-solid fa-circle-notch fa-spin me-2"></i>Loading audit events...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", async function () {
+        const profileName = document.getElementById("profile-name");
+        const profileAvatar = document.getElementById("profile-avatar");
+        const profileSpecialty = document.getElementById("profile-specialty");
+        const profileEmail = document.getElementById("profile-email");
+        const statConsultations = document.getElementById("stat-consultations");
+        const statActive = document.getElementById("stat-active");
+        const statClosed = document.getElementById("stat-closed");
+        const auditTbody = document.getElementById("audit-tbody");
+        const auditFilter = document.getElementById("audit-filter");
+
+        let allAuditLogs = [];
+
+        // ---- Load Doctor Profile ----
+        async function loadProfile() {
+            try {
+                const response = await fetch("/api/doctors/me", {
+                    headers: { "Authorization": "Bearer " + localStorage.getItem("medshield_access_token") }
+                });
+                if (!response.ok) { window.location.href = "/login"; return; }
+                const doctor = await response.json();
+
+                profileName.textContent = doctor.full_name || doctor.email;
+                profileEmail.textContent = doctor.email;
+                profileSpecialty.textContent = doctor.specialty || "General Practice";
+                profileAvatar.textContent = (doctor.full_name || doctor.email)
+                    .split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+            } catch (err) {
+                console.error("Failed to load profile:", err);
+            }
+        }
+
+        // ---- Load Consultation Stats ----
+        async function loadStats() {
+            try {
+                const response = await fetch("/api/consultations", {
+                    headers: { "Authorization": "Bearer " + localStorage.getItem("medshield_access_token") }
+                });
+                if (response.ok) {
+                    const consultations = await response.json();
+                    const active = consultations.filter(c => c.status === "active").length;
+                    const closed = consultations.filter(c => c.status === "completed").length;
+                    statConsultations.textContent = consultations.length;
+                    statActive.textContent = active;
+                    statClosed.textContent = closed;
+                }
+            } catch (err) {
+                console.error("Failed to load stats:", err);
+            }
+        }
+
+        // ---- Load Audit Logs ----
+        async function loadAuditLogs() {
+            try {
+                const response = await fetch("/api/doctors/me/audit-logs?limit=100", {
+                    headers: { "Authorization": "Bearer " + localStorage.getItem("medshield_access_token") }
+                });
+                if (response.ok) {
+                    allAuditLogs = await response.json();
+                    renderAuditTable(allAuditLogs);
+                } else {
+                    // Fallback: render local activity logs from localStorage
+                    renderLocalActivityLogs();
+                }
+            } catch (err) {
+                renderLocalActivityLogs();
+            }
+        }
+
+        function renderLocalActivityLogs() {
+            // Build from localStorage activity store
+            const logs = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith("medshield_activity_")) {
+                    try {
+                        const entries = JSON.parse(localStorage.getItem(key) || "[]");
+                        entries.forEach(e => logs.push(e));
+                    } catch(_) {}
+                }
+            }
+            if (logs.length === 0) {
+                auditTbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted small"><i class="fa-solid fa-shield-halved me-1"></i>No audit events recorded yet.</td></tr>`;
+                return;
+            }
+            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            allAuditLogs = logs;
+            renderAuditTable(logs);
+        }
+
+        function renderAuditTable(logs) {
+            const filterVal = auditFilter.value;
+            const filtered = filterVal ? logs.filter(l => (l.event_type || l.action || "").includes(filterVal)) : logs;
+
+            if (filtered.length === 0) {
+                auditTbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted small">No matching events.</td></tr>`;
+                return;
+            }
+
+            auditTbody.innerHTML = filtered.map(log => {
+                const ts = log.timestamp || log.created_at || "";
+                const formattedTs = ts ? new Date(ts).toLocaleString("en-US", { dateStyle: "short", timeStyle: "medium" }) : "—";
+                const eventType = log.event_type || log.action || "system";
+                const description = log.description || log.details || JSON.stringify(log).substring(0, 80);
+                const ip = log.ip_address || "127.0.0.1";
+                const risk = log.risk_level || "low";
+
+                const riskBadge = {
+                    "high": `<span class="badge bg-danger">High</span>`,
+                    "medium": `<span class="badge bg-warning text-dark">Medium</span>`,
+                    "low": `<span class="badge bg-success">Low</span>`,
+                }[risk] || `<span class="badge bg-secondary">Info</span>`;
+
+                const eventIcon = {
+                    "login": "fa-right-to-bracket",
+                    "logout": "fa-right-from-bracket",
+                    "register": "fa-user-plus",
+                    "consultation": "fa-folder-open",
+                    "upload": "fa-upload",
+                    "report": "fa-file-medical",
+                    "medical_qa": "fa-robot",
+                }[eventType] || "fa-shield-halved";
+
+                return `
+                    <tr style="font-size: 0.82rem;">
+                        <td class="text-muted">${formattedTs}</td>
+                        <td><i class="fa-solid ${eventIcon} text-primary me-1"></i>${eventType}</td>
+                        <td class="text-muted" style="max-width: 260px;">${description}</td>
+                        <td class="text-muted">${ip}</td>
+                        <td>${riskBadge}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        auditFilter.addEventListener("change", () => renderAuditTable(allAuditLogs));
+
+        // Export audit logs
+        document.getElementById("export-audit-btn").addEventListener("click", () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allAuditLogs, null, 2));
+            const a = document.createElement("a");
+            a.href = dataStr;
+            a.download = "medshield_audit_log.json";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+
+        // Change password form
+        document.getElementById("change-password-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const errorEl = document.getElementById("pw-error");
+            const successEl = document.getElementById("pw-success");
+            errorEl.classList.add("d-none");
+            successEl.classList.add("d-none");
+
+            const newPw = document.getElementById("new-password").value;
+            const confirmPw = document.getElementById("confirm-password").value;
+
+            if (newPw.length < 8) {
+                errorEl.textContent = "New password must be at least 8 characters.";
+                errorEl.classList.remove("d-none");
+                return;
+            }
+            if (newPw !== confirmPw) {
+                errorEl.textContent = "New passwords do not match.";
+                errorEl.classList.remove("d-none");
+                return;
+            }
+
+            const btn = document.getElementById("change-pw-btn");
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Updating...';
+
+            try {
+                const response = await fetch("/api/auth/change-password", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    },
+                    body: JSON.stringify({
+                        current_password: document.getElementById("current-password").value,
+                        new_password: newPw
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || "Failed to update password.");
+                successEl.classList.remove("d-none");
+                this.reset();
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.classList.remove("d-none");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-lock-open me-2"></i>Update Password';
+            }
+        });
+
+        // Init
+        await loadProfile();
+        await loadStats();
+        await loadAuditLogs();
+    });
+</script>
+{% endblock %}

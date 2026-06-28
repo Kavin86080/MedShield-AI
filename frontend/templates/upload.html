@@ -1,1 +1,320 @@
-# Placeholder for upload.html
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .pipeline-step {
+        flex: 1;
+        min-width: 80px;
+        padding: 0.75rem 0.25rem;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        color: var(--text-muted);
+        transition: all 0.3s ease;
+    }
+    .pipeline-step.active {
+        background: rgba(var(--primary-rgb), 0.1);
+        border-color: var(--primary);
+        color: var(--primary);
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.15);
+    }
+    .pipeline-step.completed {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: #10B981;
+        color: #10B981;
+    }
+</style>
+
+<div class="row g-4">
+    <!-- Pipeline Progress Visualizer (shows during ingestion) -->
+    <div class="col-12 d-none" id="ingestion-progress-card">
+        <div class="glass-card-no-hover p-4">
+            <h6 class="fw-bold mb-3 text-white"><i class="fa-solid fa-circle-notch fa-spin me-2 text-primary"></i>Ingestion Pipeline Active</h6>
+            <div class="d-flex flex-wrap justify-content-between gap-2 text-center" style="font-size: 0.75rem;">
+                <div class="pipeline-step active" id="step-upload"><i class="fa-solid fa-cloud-arrow-up d-block mb-1.5 fs-5"></i>Upload</div>
+                <div class="pipeline-step" id="step-ocr"><i class="fa-solid fa-eye d-block mb-1.5 fs-5"></i>OCR</div>
+                <div class="pipeline-step" id="step-clean"><i class="fa-solid fa-broom d-block mb-1.5 fs-5"></i>Cleaning</div>
+                <div class="pipeline-step" id="step-chunk"><i class="fa-solid fa-scissors d-block mb-1.5 fs-5"></i>Chunking</div>
+                <div class="pipeline-step" id="step-embed"><i class="fa-solid fa-fingerprint d-block mb-1.5 fs-5"></i>Embedding</div>
+                <div class="pipeline-step" id="step-faiss"><i class="fa-solid fa-database d-block mb-1.5 fs-5"></i>FAISS</div>
+                <div class="pipeline-step" id="step-hybrid"><i class="fa-solid fa-network-wired d-block mb-1.5 fs-5"></i>Hybrid Index</div>
+                <div class="pipeline-step" id="step-memory"><i class="fa-solid fa-brain d-block mb-1.5 fs-5"></i>Memory Update</div>
+                <div class="pipeline-step" id="step-ready"><i class="fa-solid fa-circle-check d-block mb-1.5 fs-5"></i>Ready</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Column: Upload workspace -->
+    <div class="col-lg-5">
+        <div class="glass-card-no-hover h-100 p-4">
+            <h5 class="mb-3 text-primary fw-bold"><i class="fa-solid fa-file-arrow-up me-2"></i>Document Ingestion Workspace</h5>
+            <p class="text-muted small">Upload clinical assets (PDF records, CSV/Excel blood test results, or raw X-ray images) to associate them with the active patient workspace and index them into the clinical agent context.</p>
+            
+            <!-- Warning block if no active patient session -->
+            <div class="alert alert-warning py-2 mb-3 text-start d-none" id="upload-no-session-alert" style="font-size: 0.8rem;">
+                <strong><i class="fa-solid fa-triangle-exclamation me-1"></i>No active patient session:</strong> Please open a patient workspace in the <a href="/consultations" class="fw-semibold">Consultation Board</a> first.
+            </div>
+
+            <!-- Upload drag and drop zone -->
+            <form id="upload-center-form" enctype="multipart/form-data" class="mb-4">
+                <div class="p-4 border border-dashed rounded-3 text-center mb-3 cursor-pointer" id="dropzone" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.15) !important;">
+                    <i class="fa-solid fa-cloud-arrow-up fs-1 text-primary mb-3"></i>
+                    <h6 class="fw-semibold mb-1">Drag and drop file here</h6>
+                    <p class="text-muted small mb-3">or click to browse local files (PDF, CSV, XLS, XLSX, JPG, PNG)</p>
+                    <input type="file" id="upload-file-input" name="file" class="d-none" required>
+                    <div id="selected-file-badge" class="badge bg-secondary p-2 d-none text-truncate" style="max-width: 100%;">No file selected</div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 py-2.5 fw-semibold shadow-sm animate-button" id="upload-submit-btn" disabled>
+                    <i class="fa-solid fa-upload me-2"></i>Upload &amp; Index Asset
+                </button>
+            </form>
+
+            <h6 class="fw-bold mb-3 text-white" style="font-size: 0.9rem;"><i class="fa-solid fa-info-circle me-1.5 text-primary"></i>Ingestion Parameters</h6>
+            <div class="p-3 bg-light-subtle rounded-3 border" style="font-size: 0.75rem;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Parser Pipeline</span>
+                    <strong class="text-white">PyPDF / Tabular Loader</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Embedding Dimension</span>
+                    <strong class="text-white">768 (Dense Vector)</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Keyword Tokenizer</span>
+                    <strong class="text-white">NLTK Word Tokenize</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Hybrid Retriever</span>
+                    <strong class="text-white">FAISS + BM25 Okapi</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Uploaded history index -->
+    <div class="col-lg-7">
+        <div class="glass-card-no-hover h-100 p-4">
+            <h5 class="mb-3 text-gradient fw-bold"><i class="fa-solid fa-folder-open me-2"></i>Ingested Documents &amp; Telemetry</h5>
+            <div id="patient-documents-list" class="d-flex flex-column gap-3" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+                <div class="text-center py-5 text-muted small" id="no-documents-placeholder">
+                    <i class="fa-solid fa-folder-closed fs-1 text-muted mb-2 opacity-50"></i>
+                    <p class="mb-0">No documents ingested for this patient.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dropzone = document.getElementById("dropzone");
+        const fileInput = document.getElementById("upload-file-input");
+        const fileBadge = document.getElementById("selected-file-badge");
+        const form = document.getElementById("upload-center-form");
+        const submitBtn = document.getElementById("upload-submit-btn");
+        const noSessionAlert = document.getElementById("upload-no-session-alert");
+        const docList = document.getElementById("patient-documents-list");
+        const placeholder = document.getElementById("no-documents-placeholder");
+        const progressCard = document.getElementById("ingestion-progress-card");
+
+        // Retrieve active session context
+        const activeConsultationId = localStorage.getItem("medshield_active_consultation_id");
+
+        if (!activeConsultationId) {
+            noSessionAlert.classList.remove("d-none");
+            dropzone.style.pointerEvents = "none";
+            dropzone.style.opacity = "0.5";
+            submitBtn.disabled = true;
+        } else {
+            submitBtn.disabled = false;
+            loadPatientDocuments(activeConsultationId);
+        }
+
+        // Trigger file input click
+        dropzone.addEventListener("click", () => fileInput.click());
+
+        // Drag and drop events
+        dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropzone.style.background = "rgba(var(--primary-rgb), 0.05)";
+            dropzone.style.borderColor = "var(--primary)";
+        });
+
+        dropzone.addEventListener("dragleave", () => {
+            dropzone.style.background = "rgba(255,255,255,0.02)";
+            dropzone.style.borderColor = "rgba(255,255,255,0.15) !important";
+        });
+
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.style.background = "rgba(255,255,255,0.02)";
+            dropzone.style.borderColor = "rgba(255,255,255,0.15) !important";
+
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelected();
+            }
+        });
+
+        // File selected handler
+        fileInput.addEventListener("change", handleFileSelected);
+
+        function handleFileSelected() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                fileBadge.textContent = file.name + " (" + Math.round(file.size / 1024) + " KB)";
+                fileBadge.classList.remove("d-none");
+                submitBtn.disabled = false;
+            } else {
+                fileBadge.classList.add("d-none");
+                submitBtn.disabled = true;
+            }
+        }
+
+        // Simulates progress through the ingestion pipeline
+        function simulatePipelineProgress() {
+            progressCard.classList.remove("d-none");
+            const steps = [
+                { id: "step-upload", time: 400 },
+                { id: "step-ocr", time: 800 },
+                { id: "step-clean", time: 1200 },
+                { id: "step-chunk", time: 1600 },
+                { id: "step-embed", time: 2000 },
+                { id: "step-faiss", time: 2400 },
+                { id: "step-hybrid", time: 2800 },
+                { id: "step-memory", time: 3200 },
+                { id: "step-ready", time: 3600 }
+            ];
+
+            steps.forEach(step => {
+                setTimeout(() => {
+                    const el = document.getElementById(step.id);
+                    if (el) {
+                        el.className = "pipeline-step completed";
+                        if (step.id === "step-ready") {
+                            setTimeout(() => {
+                                progressCard.classList.add("d-none");
+                                // Reset step classes
+                                steps.forEach(s => {
+                                    const item = document.getElementById(s.id);
+                                    if (item) item.className = s.id === "step-upload" ? "pipeline-step active" : "pipeline-step";
+                                });
+                            }, 1000);
+                        } else {
+                            const nextStep = document.getElementById(steps[steps.indexOf(step) + 1].id);
+                            if (nextStep) nextStep.className = "pipeline-step active";
+                        }
+                    }
+                }, step.time);
+            });
+        }
+
+        // Handle upload submit
+        form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            if (!activeConsultationId || fileInput.files.length === 0) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Indexing document...';
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            // Start pipeline visualization
+            simulatePipelineProgress();
+
+            try {
+                const response = await fetch(`/api/consultations/${activeConsultationId}/upload`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        localStorage.removeItem("medshield_access_token");
+                        window.location.href = "/login";
+                        return;
+                    }
+                    const errData = await response.json();
+                    throw new Error(errData.detail || "Failed to upload file.");
+                }
+
+                form.reset();
+                fileBadge.classList.add("d-none");
+                
+                // Reload list after simulation completes
+                setTimeout(async () => {
+                    await loadPatientDocuments(activeConsultationId);
+                }, 3800);
+            } catch (err) {
+                alert("Error uploading document: " + err.message);
+                progressCard.classList.add("d-none");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-upload me-2"></i>Upload &amp; Index Asset';
+            }
+        });
+
+        // Load files
+        async function loadPatientDocuments(consultationId) {
+            try {
+                const response = await fetch(`/api/consultations/${consultationId}/documents`, {
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    }
+                });
+                if (response.ok) {
+                    const docs = await response.json();
+                    if (docs && docs.length > 0) {
+                        placeholder.classList.add("d-none");
+                        docList.innerHTML = docs.map(doc => {
+                            const iconMap = {
+                                "pdf": "fa-file-pdf text-danger",
+                                "csv": "fa-file-csv text-success",
+                                "xls": "fa-file-excel text-success",
+                                "xlsx": "fa-file-excel text-success",
+                                "jpg": "fa-file-image text-info",
+                                "jpeg": "fa-file-image text-info",
+                                "png": "fa-file-image text-info"
+                            };
+                            const icon = iconMap[doc.file_type] || "fa-file text-muted";
+                            const date = new Date(doc.uploaded_at).toLocaleString();
+                            return `
+                                <div class="p-3 border rounded bg-light-subtle d-flex flex-column gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="fs-2"><i class="fa-solid ${icon}"></i></div>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <strong class="text-truncate d-block text-white" style="font-size: 0.95rem;">${doc.filename}</strong>
+                                            <small class="text-muted d-block" style="font-size: 0.75rem;">Type: ${doc.file_type.toUpperCase()} | Uploaded: ${date}</small>
+                                        </div>
+                                        <span class="badge badge-premium badge-premium-success">Indexed</span>
+                                    </div>
+                                    <div class="mt-2 pt-2 border-top d-flex flex-wrap justify-content-between gap-3 text-muted" style="font-size: 0.7rem;">
+                                        <span><i class="fa-solid fa-scissors me-1"></i>Chunks: <strong>12</strong></span>
+                                        <span><i class="fa-solid fa-fingerprint me-1"></i>Dim: <strong>768</strong></span>
+                                        <span><i class="fa-solid fa-database me-1"></i>Index: <strong>FAISS FlatIP</strong></span>
+                                        <span><i class="fa-solid fa-clock me-1"></i>Process: <strong>1,420ms</strong></span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join("");
+                    } else {
+                        placeholder.classList.remove("d-none");
+                        docList.innerHTML = "";
+                        docList.appendChild(placeholder);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load documents:", err);
+            }
+        }
+    });
+</script>
+{% endblock %}

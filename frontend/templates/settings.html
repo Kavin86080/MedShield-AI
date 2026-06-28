@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-8">
+        <div class="glass-card-no-hover">
+            <h4 class="mb-4 pb-2 border-bottom"><i class="fa-solid fa-sliders text-primary me-2"></i>Workspace Configuration</h4>
+            
+            <form id="settings-form">
+                <!-- Theme Control Section -->
+                <div class="mb-4">
+                    <h6 class="text-primary fw-semibold mb-3"><i class="fa-solid fa-circle-half-stroke me-2"></i>Theme &amp; Style</h6>
+                    <div class="p-3 border rounded-3 bg-light-subtle d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="d-block fw-medium mb-1">Color Mode Theme</span>
+                            <small class="text-muted">Switch between premium dark mode and slate light mode.</small>
+                        </div>
+                        <div class="btn-group" role="group" aria-label="Theme Selection Group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="set-theme-light">
+                                <i class="fa-solid fa-sun me-1"></i>Light Mode
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="set-theme-dark">
+                                <i class="fa-solid fa-moon me-1"></i>Dark Mode
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- API Section -->
+                <div class="mb-4">
+                    <h6 class="text-primary fw-semibold mb-3"><i class="fa-solid fa-key me-2"></i>API Integrations</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="api-url" class="form-label small fw-semibold">Backend API URL</label>
+                            <input type="url" class="form-control form-control-premium" id="api-url" value="http://localhost:8000" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="api-key" class="form-label small fw-semibold">Gemini API Token Key</label>
+                            <input type="password" class="form-control form-control-premium" id="api-key" value="••••••••••••••••••••••••••••••••" placeholder="Enter API Key">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Model parameters -->
+                <div class="mb-4">
+                    <h6 class="text-primary fw-semibold mb-3"><i class="fa-solid fa-brain me-2"></i>Model Weights &amp; Parameters</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="model-select" class="form-label small fw-semibold">Radiology Prediction Model</label>
+                            <select class="form-select form-control-premium" id="model-select">
+                                <option value="densenet">DenseNet-121 (Standard Active)</option>
+                                <option value="resnet">ResNet-50</option>
+                                <option value="vit">ViT-Base (Vision Transformer)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="model-temp" class="form-label small fw-semibold">LLM Temperature: <span id="temp-val">0.2</span></label>
+                            <input type="range" class="form-range" id="model-temp" min="0" max="1" step="0.1" value="0.2">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notifications -->
+                <div class="mb-4">
+                    <h6 class="text-primary fw-semibold mb-3"><i class="fa-solid fa-bell me-2"></i>Clinical Warning Alerts</h6>
+                    <div class="p-3 border rounded-3 bg-light-subtle">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="email-notif" checked>
+                            <label class="form-check-label small" for="email-notif">Email summary alerts (Sent after report generations)</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="push-notif" checked>
+                            <label class="form-check-label small" for="push-notif">System push alerts (Real-time agent completions)</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="alert-notif" checked>
+                            <label class="form-check-label small" for="alert-notif">Critical diagnostic alert overrides (High priority classifications)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border-top pt-4 text-end">
+                    <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>Save Configurations
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("settings-form");
+        const tempRange = document.getElementById("model-temp");
+        const tempVal = document.getElementById("temp-val");
+        
+        const lightBtn = document.getElementById("set-theme-light");
+        const darkBtn = document.getElementById("set-theme-dark");
+        
+        // Load initial theme highlight
+        const savedTheme = localStorage.getItem('medshield_theme') || 'dark';
+        if (savedTheme === 'light') {
+            lightBtn.classList.add("active", "btn-primary");
+            lightBtn.classList.remove("btn-outline-primary");
+        } else {
+            darkBtn.classList.add("active", "btn-primary");
+            darkBtn.classList.remove("btn-outline-primary");
+        }
+        
+        // Temp range tracker
+        tempRange.addEventListener("input", function() {
+            tempVal.textContent = this.value;
+        });
+        
+        // Theme clickers
+        lightBtn.addEventListener("click", () => {
+            setTheme('light');
+            lightBtn.classList.add("active", "btn-primary");
+            lightBtn.classList.remove("btn-outline-primary");
+            darkBtn.classList.remove("active", "btn-primary");
+            darkBtn.classList.add("btn-outline-primary");
+        });
+        
+        darkBtn.addEventListener("click", () => {
+            setTheme('dark');
+            darkBtn.classList.add("active", "btn-primary");
+            darkBtn.classList.remove("btn-outline-primary");
+            lightBtn.classList.remove("active", "btn-primary");
+            lightBtn.classList.add("btn-outline-primary");
+        });
+        
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('medshield_theme', theme);
+            
+            // Sync theme toggle icon in navbar
+            const themeToggleIcon = document.getElementById('theme-toggle-icon');
+            if (themeToggleIcon) {
+                if (theme === 'dark') {
+                    themeToggleIcon.className = 'fa-solid fa-moon';
+                } else {
+                    themeToggleIcon.className = 'fa-solid fa-sun';
+                }
+            }
+        }
+        
+        // Save form submission
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            alert("Workspace configurations have been saved successfully!");
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- PDF Upload & Preview -->
+    <div class="col-lg-4">
+        <div class="glass-card-no-hover mb-4">
+            <h5 class="mb-3"><i class="fa-solid fa-file-pdf text-danger me-2"></i>PDF Analysis Portal</h5>
+            
+            <!-- Drag & Drop PDF Area -->
+            <div class="drag-drop-zone mb-3" id="doc-drag-drop-area">
+                <i class="fa-solid fa-file-circle-question upload-icon text-danger"></i>
+                <h6>Drag &amp; Drop Medical PDF</h6>
+                <p class="text-muted small">Supports scientific papers &amp; clinical charts</p>
+                <span class="btn btn-sm btn-outline-danger">Browse PDF</span>
+                <input type="file" id="doc-file-input" class="d-none" accept="application/pdf">
+            </div>
+            
+            <!-- Document Details (Hidden by Default) -->
+            <div id="doc-details-container" class="d-none mb-3">
+                <h6 class="mb-2 text-primary"><i class="fa-solid fa-circle-info me-1"></i>Document Details:</h6>
+                <div class="p-2 border rounded-3 bg-light-subtle small">
+                    <div><strong>Name:</strong> <span id="doc-name-text">N/A</span></div>
+                    <div><strong>Size:</strong> <span id="doc-size-text">N/A</span></div>
+                </div>
+            </div>
+            
+            <!-- Analyze Input & Button -->
+            <div class="mb-3">
+                <label for="doc-query-input" class="form-label small fw-semibold">Extract Query Instructions</label>
+                <input type="text" class="form-control form-control-premium py-2" id="doc-query-input" value="Summarize the core methodology and clinical findings of this report." placeholder="Enter specific search question (e.g. Find dosage recommendations)">
+            </div>
+            
+            <button class="btn btn-danger w-100 py-2.5 fw-semibold" id="doc-analyze-btn" disabled>
+                <i class="fa-solid fa-magnifying-glass-chart me-2"></i>Analyze Document Chunks
+            </button>
+        </div>
+        
+        <!-- Preloaded Document Helper Info -->
+        <div class="glass-card-no-hover">
+            <h6 class="text-primary mb-2"><i class="fa-solid fa-server me-1"></i>Active Document Knowledge</h6>
+            <p class="text-muted small mb-0">By default, the document agent parses `medisense_paper.pdf` which is indexed in our database. Uploading a custom PDF overrides this scope temporarily for search and summary extractions.</p>
+        </div>
+    </div>
+    
+    <!-- Analysis Breakdown Results -->
+    <div class="col-lg-8">
+        <!-- Loader -->
+        <div class="glass-card-no-hover text-center p-5 mb-4 d-none" id="doc-loader">
+            <div class="spinner-border text-danger mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+            <h5>Orchestrating Document Analysis Agent...</h5>
+            <p class="text-muted mb-0">Chunking document pages, evaluating embeddings, and running text summaries.</p>
+        </div>
+        
+        <!-- Results Card -->
+        <div class="glass-card-no-hover d-none" id="doc-results-card">
+            <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-4">
+                <h4 class="mb-0"><i class="fa-solid fa-square-poll-vertical text-danger me-2"></i>Extracted Paper Intelligence</h4>
+                <span class="badge badge-premium badge-premium-info">Citation Ready</span>
+            </div>
+            
+            <!-- Summary Blocks -->
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <div class="p-3 border rounded-3 bg-light-subtle">
+                        <h6 class="fw-semibold text-danger mb-2"><i class="fa-solid fa-feather-pointed me-2"></i>Executive Summary:</h6>
+                        <p class="text-main mb-0" id="doc-summary-text" style="line-height: 1.6; font-size: 0.95rem; white-space: pre-line;"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <h6 class="fw-semibold text-main mb-2"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Key Findings:</h6>
+                    <ul class="text-muted small ps-3" id="doc-findings-list" style="line-height: 1.6;">
+                        <!-- Findings list -->
+                    </ul>
+                </div>
+                <div class="col-md-6 border-start">
+                    <h6 class="fw-semibold text-main mb-2"><i class="fa-solid fa-gears text-primary me-2"></i>Methodology &amp; Results:</h6>
+                    <p class="text-muted small" id="doc-method-text" style="line-height: 1.5;"></p>
+                </div>
+            </div>
+            
+            <!-- Citation & Metadata -->
+            <div class="border-top pt-4">
+                <h6 class="fw-semibold text-main mb-2"><i class="fa-solid fa-quote-left text-danger me-2"></i>Citation Ready Summary:</h6>
+                <div class="p-3 border rounded-3 bg-dark-subtle d-flex align-items-center justify-content-between gap-3 mb-3">
+                    <code id="doc-citation-box" class="text-monospace small" style="color: var(--text-main); font-family: monospace;">
+                        MedShield-X AI (2026). "Synthesized Analysis of Clinical Record and Literature Archives". Clin Decision Support Rep.
+                    </code>
+                    <button class="btn btn-sm btn-outline-secondary text-nowrap" id="doc-copy-citation-btn">
+                        <i class="fa-solid fa-copy me-1"></i>Copy
+                    </button>
+                </div>
+                
+                <!-- Keywords Tags -->
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge badge-premium badge-premium-primary">RAG Search</span>
+                    <span class="badge badge-premium badge-premium-info">Dense Retrieval</span>
+                    <span class="badge badge-premium badge-premium-success">LLM Summary</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Welcome Prompt Placeholder -->
+        <div class="glass-card-no-hover text-center p-5" id="doc-placeholder-card">
+            <i class="fa-solid fa-book-open text-muted opacity-50 mb-3" style="font-size: 4rem;"></i>
+            <h5>Knowledge Base Ready</h5>
+            <p class="text-muted">Enter a search question or upload an override medical PDF document and click Analyze to fetch RAG intelligence.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dragDrop = document.getElementById("doc-drag-drop-area");
+        const fileInput = document.getElementById("doc-file-input");
+        const detailsContainer = document.getElementById("doc-details-container");
+        const nameText = document.getElementById("doc-name-text");
+        const sizeText = document.getElementById("doc-size-text");
+        
+        const queryInput = document.getElementById("doc-query-input");
+        const analyzeBtn = document.getElementById("doc-analyze-btn");
+        
+        const loader = document.getElementById("doc-loader");
+        const resultsCard = document.getElementById("doc-results-card");
+        const placeholderCard = document.getElementById("doc-placeholder-card");
+        
+        const summaryText = document.getElementById("doc-summary-text");
+        const findingsList = document.getElementById("doc-findings-list");
+        const methodText = document.getElementById("doc-method-text");
+        
+        const copyBtn = document.getElementById("doc-copy-citation-btn");
+        const citationBox = document.getElementById("doc-citation-box");
+        
+        let uploadedLocalPath = null;
+        
+        // Auto-enable search for preloaded document
+        analyzeBtn.disabled = false;
+        
+        // Drag drop bindings
+        dragDrop.addEventListener("click", () => fileInput.click());
+        
+        dragDrop.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dragDrop.classList.add("dragover");
+        });
+        
+        dragDrop.addEventListener("dragleave", () => {
+            dragDrop.classList.remove("dragover");
+        });
+        
+        dragDrop.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dragDrop.classList.remove("dragover");
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+        
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+        
+        async function handleFileSelect(file) {
+            nameText.textContent = file.name;
+            sizeText.textContent = (file.size / (1024 * 1024)).toFixed(2) + " MB";
+            detailsContainer.classList.remove("d-none");
+            
+            // Upload PDF
+            const formData = new FormData();
+            formData.append("file", file);
+            
+            try {
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                if (!response.ok) {
+                    throw new Error("PDF upload failed.");
+                }
+                const data = await response.json();
+                uploadedLocalPath = data.local_path;
+            } catch (err) {
+                alert("Upload error: " + err.message);
+            }
+        }
+        
+        // Analyze Action
+        analyzeBtn.addEventListener("click", async () => {
+            const query = queryInput.value.trim();
+            if (!query) return;
+            
+            loader.classList.remove("d-none");
+            resultsCard.classList.add("d-none");
+            placeholderCard.classList.add("d-none");
+            analyzeBtn.disabled = true;
+            
+            try {
+                // Call /analyze-document
+                const response = await fetch("/analyze-document", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        question: query,
+                        pdf_path: uploadedLocalPath
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error("Failed to process document analysis.");
+                }
+                
+                const report = await response.json();
+                
+                loader.classList.add("d-none");
+                resultsCard.classList.remove("d-none");
+                
+                // Load summaries
+                summaryText.textContent = report.answer || "Document analysis completed with no summary return.";
+                methodText.textContent = "The Document Agent used dense vector retrieval with cosine similarity to locate semantically relevant passages. A Reasoning Agent synthesised the retrieved context into the answer above.";
+                
+                // Render real retrieved contexts from backend RAG
+                let contextHtml = '';
+                if (report.contexts && report.contexts.length > 0) {
+                    const contextItems = report.contexts.map((ctx, idx) => `
+                        <div class="border-bottom pb-2 mb-2 last-border-0">
+                            <span class="badge badge-premium badge-premium-primary mb-1" style="font-size:0.7rem;">Chunk #${idx + 1}</span>
+                            <p class="text-muted small mb-0" style="line-height:1.4;">${ctx}</p>
+                        </div>
+                    `).join('');
+                    contextHtml = `
+                        <div class="border-top pt-3 mt-3">
+                            <h6 class="fw-semibold text-main mb-2">
+                                <i class="fa-solid fa-database text-primary me-2"></i>Retrieved RAG Chunks
+                                <span class="badge bg-secondary ms-2" style="font-size:0.7rem;">${report.contexts.length} sources</span>
+                            </h6>
+                            <div class="accordion" id="ctx-accordion">
+                                <div class="accordion-item border border-opacity-10" style="background:transparent;">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed py-2 px-3 small text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#ctx-collapse" style="background:transparent;font-size:0.8rem;">
+                                            <i class="fa-solid fa-layer-group me-2 text-gradient"></i>View ${report.contexts.length} Retrieved Document Chunks
+                                        </button>
+                                    </h2>
+                                    <div id="ctx-collapse" class="accordion-collapse collapse">
+                                        <div class="accordion-body p-2 bg-light-subtle rounded-bottom" style="font-size:0.8rem;max-height:200px;overflow-y:auto;">
+                                            ${contextItems}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('doc-results-card').insertAdjacentHTML('beforeend', contextHtml);
+                }
+                
+                // Build real findings list from backend response
+                let confidenceHtml = '';
+                if (report.confidence) {
+                    confidenceHtml = `<li>Confidence score: <strong>${report.confidence}</strong></li>`;
+                }
+
+                findingsList.innerHTML = `
+                    <li class="mb-2">Route classified as: <strong>${report.route || 'document_analysis'}</strong></li>
+                    <li class="mb-2">${report.contexts ? report.contexts.length : 0} semantic context chunks retrieved from RAG.</li>
+                    <li class="mb-2">Reasoning Agent synthesised final answer from retrieved evidence.</li>
+                    ${confidenceHtml}
+                `;
+                
+                // Update citation text
+                if (report.document_source) {
+                    citationBox.textContent = `MedShield-X AI (2026). "Synthesized Analysis for: '${query}'". Source: ${report.document_source}.`;
+                } else {
+                    citationBox.textContent = `MedShield-X AI (2026). "Synthesized Analysis for: '${query}'".`;
+                }
+                
+                // Log to shared activity store for dashboard
+                MedShieldActivity.log('document', {
+                    filename: uploadedLocalPath ? uploadedLocalPath.split(/[\\/]/).pop() : 'Preloaded Document',
+                    question: query,
+                    answer: report.answer ? report.answer.substring(0, 200) : '',
+                    contexts_count: (report.contexts || []).length,
+                    route: report.route || 'document_analysis'
+                });
+                
+            } catch (err) {
+                loader.classList.add("d-none");
+                placeholderCard.classList.remove("d-none");
+                alert("Analysis error: " + err.message);
+            } finally {
+                analyzeBtn.disabled = false;
+            }
+        });
+        
+        // Copy Citation
+        copyBtn.addEventListener("click", () => {
+            navigator.clipboard.writeText(citationBox.textContent.trim());
+            alert("Citation copied to clipboard!");
+        });
+    });
+</script>
+{% endblock %}

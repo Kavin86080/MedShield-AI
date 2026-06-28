@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Warning block if no active patient session -->
+<div class="alert alert-warning py-3 mb-4 text-start d-none" id="passport-no-session-alert" style="font-size: 0.9rem;">
+    <strong><i class="fa-solid fa-triangle-exclamation me-1"></i>No active patient session:</strong> Please select or create a patient record in the <a href="/consultations" class="fw-semibold">Consultations Manager</a> to view their Health Passport.
+</div>
+
+<div class="row g-4 d-none" id="passport-workspace">
+    <!-- Patient Profile Summary -->
+    <div class="col-lg-4">
+        <div class="glass-card-no-hover mb-4">
+            <div class="text-center pb-3 border-bottom mb-3">
+                <div class="chat-avatar user-avatar mx-auto mb-2" style="width: 70px; height: 70px; font-size: 1.75rem;" id="patient-avatar">PT</div>
+                <h5 class="mb-1" id="patient-name">Patient Name</h5>
+                <span class="badge badge-premium badge-premium-primary mb-2" id="patient-id-badge">Patient ID: Pending</span>
+            </div>
+            
+            <div class="d-flex flex-column gap-2" style="font-size: 0.9rem;">
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Age / Gender:</span>
+                    <span class="fw-medium" id="patient-age-gender">Loading...</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Blood Group:</span>
+                    <span class="fw-medium">A Positive (A+)</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Status:</span>
+                    <span class="badge badge-premium badge-premium-success" id="patient-status-badge">Active Care</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Medical History & Medications -->
+        <div class="glass-card-no-hover mb-4">
+            <h6 class="text-primary mb-3"><i class="fa-solid fa-notes-medical me-2"></i>Medical Record</h6>
+            <div class="mb-3">
+                <small class="text-muted d-block mb-1">Clinical History:</small>
+                <div class="d-flex flex-wrap gap-1.5">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">Hypertension</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">Asthma History</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">Allergies (None)</span>
+                </div>
+            </div>
+            <div>
+                <small class="text-muted d-block mb-1">Standard Medications:</small>
+                <ul class="ps-3 mb-0 small text-muted" style="line-height: 1.5;">
+                    <li>Lisinopril 10mg daily</li>
+                    <li>Albuterol Inhaler as needed</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Passport PDF Export -->
+        <button class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" id="download-passport-btn">
+            <i class="fa-solid fa-print"></i>
+            Print Health Passport
+        </button>
+    </div>
+    
+    <!-- Clinical Timeline & Dynamic Logs -->
+    <div class="col-lg-8">
+        <div class="glass-card-no-hover">
+            <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-4">
+                <h4 class="mb-0"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Clinical Care Timeline</h4>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addTimelineModal">
+                    <i class="fa-solid fa-plus me-1"></i>Add Health Record
+                </button>
+            </div>
+            
+            <!-- Timeline widget -->
+            <div class="timeline-passport" id="clinical-timeline">
+                <!-- Timeline items loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for adding health record -->
+<div class="modal fade" id="addTimelineModal" tabindex="-1" aria-labelledby="addTimelineModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card-no-hover border border-opacity-10 text-main" style="background: var(--bg-card);">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title" id="addTimelineModalLabel"><i class="fa-solid fa-circle-plus text-primary me-2"></i>Add Clinical Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="add-record-form">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="record-title" class="form-label small fw-semibold">Record Title</label>
+                        <input type="text" class="form-control form-control-premium" id="record-title" required placeholder="e.g. Annual Cardiovascular Screening">
+                    </div>
+                    <div class="mb-3">
+                        <label for="record-date" class="form-label small fw-semibold">Date</label>
+                        <input type="date" class="form-control form-control-premium" id="record-date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="record-desc" class="form-label small fw-semibold">Description Summary</label>
+                        <textarea class="form-control form-control-premium" id="record-desc" rows="3" required placeholder="Enter primary observations, agent findings, or drug allocations..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="record-type" class="form-label small fw-semibold">Record Severity Indicator</label>
+                        <select class="form-select form-control-premium" id="record-type">
+                            <option value="success">Normal (Green Dot)</option>
+                            <option value="default">Information (Blue Dot)</option>
+                            <option value="warning">Warning (Yellow Dot)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const noSessionAlert = document.getElementById("passport-no-session-alert");
+        const workspace = document.getElementById("passport-workspace");
+        
+        const patientNameEl = document.getElementById("patient-name");
+        const patientAvatarEl = document.getElementById("patient-avatar");
+        const patientIdBadge = document.getElementById("patient-id-badge");
+        const patientAgeGenderEl = document.getElementById("patient-age-gender");
+        const patientStatusBadge = document.getElementById("patient-status-badge");
+        const timeline = document.getElementById("clinical-timeline");
+        
+        const form = document.getElementById("add-record-form");
+        const addModalEl = document.getElementById("addTimelineModal");
+
+        // Retrieve active session context
+        const activeConsultationId = localStorage.getItem("medshield_active_consultation_id");
+        const activeName = localStorage.getItem("medshield_active_consultation_patient_name");
+        const activeAge = localStorage.getItem("medshield_active_consultation_patient_age");
+        const activeGender = localStorage.getItem("medshield_active_consultation_patient_gender");
+
+        if (!activeConsultationId) {
+            noSessionAlert.classList.remove("d-none");
+            workspace.classList.add("d-none");
+            return;
+        }
+
+        // Show workspace
+        noSessionAlert.classList.add("d-none");
+        workspace.classList.remove("d-none");
+
+        // Load Patient profile
+        patientNameEl.textContent = activeName;
+        patientAvatarEl.textContent = activeName.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+        patientIdBadge.textContent = "Patient ID: MD-2026-" + activeConsultationId;
+        patientAgeGenderEl.textContent = activeAge + " / " + activeGender;
+
+        // Load timeline items
+        loadTimeline();
+
+        // Form record timeline addition
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById("record-title").value;
+            const rawDate = document.getElementById("record-date").value;
+            const desc = document.getElementById("record-desc").value;
+            const severity = document.getElementById("record-type").value;
+            
+            // Format date
+            const parsedDate = new Date(rawDate);
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = parsedDate.toLocaleDateString("en-US", options);
+            
+            // Save item
+            const newLog = {
+                title: title,
+                date: formattedDate,
+                desc: desc,
+                severity: severity
+            };
+            
+            const storageKey = `medshield_timeline_${activeConsultationId}`;
+            const existingLogs = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            existingLogs.unshift(newLog);
+            localStorage.setItem(storageKey, JSON.stringify(existingLogs));
+            
+            // Re-render
+            loadTimeline();
+            
+            // Reset form & close modal
+            form.reset();
+            const modal = bootstrap.Modal.getInstance(addModalEl);
+            modal.hide();
+        });
+
+        // Trigger print
+        document.getElementById("download-passport-btn").addEventListener("click", () => {
+            window.print();
+        });
+
+        async function loadTimeline() {
+            // Re-render baseline
+            timeline.innerHTML = "";
+
+            // 1. Load custom items from localStorage
+            const storageKey = `medshield_timeline_${activeConsultationId}`;
+            const customLogs = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            
+            customLogs.forEach(log => {
+                let dotClass = "timeline-item-dot";
+                if (log.severity === "success") dotClass = "timeline-item-dot success-dot";
+                if (log.severity === "warning") dotClass = "timeline-item-dot warning-dot";
+
+                const newItem = document.createElement("div");
+                newItem.className = "timeline-item";
+                newItem.innerHTML = `
+                    <div class="${dotClass}"></div>
+                    <div class="timeline-item-header">
+                        <h6 class="fw-semibold mb-0">${log.title}</h6>
+                        <span class="timeline-item-time">${log.date}</span>
+                    </div>
+                    <p class="text-muted small mb-0">${log.desc}</p>
+                `;
+                timeline.appendChild(newItem);
+            });
+
+            // 2. Fetch documents for timeline
+            try {
+                const response = await fetch(`/api/consultations/${activeConsultationId}/documents`, {
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    }
+                });
+                if (response.ok) {
+                    const docs = await response.json();
+                    docs.forEach(doc => {
+                        const date = new Date(doc.uploaded_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' });
+                        const newItem = document.createElement("div");
+                        newItem.className = "timeline-item";
+                        newItem.innerHTML = `
+                            <div class="timeline-item-dot success-dot"></div>
+                            <div class="timeline-item-header">
+                                <h6 class="fw-semibold mb-0">Clinical File Uploaded</h6>
+                                <span class="timeline-item-time">${date}</span>
+                            </div>
+                            <p class="text-muted small mb-0">Ingested and indexed <strong>${doc.filename}</strong> (${doc.file_type.toUpperCase()}) into patient context database.</p>
+                        `;
+                        timeline.appendChild(newItem);
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load documents for timeline:", err);
+            }
+
+            // 3. Consultation base info
+            try {
+                const response = await fetch(`/api/consultations/${activeConsultationId}`, {
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                    }
+                });
+                if (response.ok) {
+                    const consultation = await response.json();
+                    
+                    // Update status badge
+                    if (consultation.status === "completed") {
+                        patientStatusBadge.className = "badge badge-premium badge-premium-primary";
+                        patientStatusBadge.textContent = "Closed Record";
+                    }
+
+                    // Add start event
+                    const startDate = new Date(consultation.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' });
+                    const startItem = document.createElement("div");
+                    startItem.className = "timeline-item";
+                    startItem.innerHTML = `
+                        <div class="timeline-item-dot"></div>
+                        <div class="timeline-item-header">
+                            <h6 class="fw-semibold mb-0">Consultation Session Opened</h6>
+                            <span class="timeline-item-time">${startDate}</span>
+                        </div>
+                        <p class="text-muted small mb-0">Session started by clinical practitioner.</p>
+                    `;
+                    timeline.appendChild(startItem);
+
+                    // Add summary event if closed
+                    if (consultation.summary) {
+                        const closedDate = new Date(consultation.updated_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' });
+                        const closedItem = document.createElement("div");
+                        closedItem.className = "timeline-item";
+                        closedItem.innerHTML = `
+                            <div class="timeline-item-dot success-dot"></div>
+                            <div class="timeline-item-header">
+                                <h6 class="fw-semibold mb-0">Clinical Summary persistent</h6>
+                                <span class="timeline-item-time">${closedDate}</span>
+                            </div>
+                            <p class="text-muted small mb-0"><strong>Practitioner Notes:</strong> ${consultation.summary}</p>
+                        `;
+                        timeline.insertBefore(closedItem, timeline.firstChild);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load consultation timeline start event:", err);
+            }
+        }
+    });
+</script>
+{% endblock %}

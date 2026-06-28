@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Form Inputs Panel -->
+    <div class="col-lg-5">
+        <div class="glass-card-no-hover mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="fa-solid fa-pen-to-square text-primary me-2"></i>Report Parameters</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="load-sample-btn">
+                    <i class="fa-solid fa-user-check me-1"></i>Load Sample Data
+                </button>
+            </div>
+            
+            <form id="report-form">
+                <!-- Patient Info -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="p-id" class="form-label small fw-semibold">Patient ID</label>
+                        <input type="text" class="form-control form-control-premium py-2" id="p-id" required placeholder="MD-2026-XXXX">
+                    </div>
+                    <div class="col-6">
+                        <label for="p-name" class="form-label small fw-semibold">Patient Name</label>
+                        <input type="text" class="form-control form-control-premium py-2" id="p-name" required placeholder="e.g. Alex Thorne">
+                    </div>
+                    <div class="col-6">
+                        <label for="p-age" class="form-label small fw-semibold">Age</label>
+                        <input type="number" class="form-control form-control-premium py-2" id="p-age" required placeholder="e.g. 45">
+                    </div>
+                    <div class="col-6">
+                        <label for="p-gender" class="form-label small fw-semibold">Gender</label>
+                        <select class="form-select form-control-premium py-2" id="p-gender">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Clinical Info -->
+                <div class="mb-3">
+                    <label for="xray-result" class="form-label small fw-semibold">X-Ray Classification Result</label>
+                    <select class="form-select form-control-premium py-2" id="xray-result">
+                        <option value="NORMAL">NORMAL (No infiltrates/consolidations)</option>
+                        <option value="PNEUMONIA">PNEUMONIA (Active airspace consolidations)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="clinical-notes" class="form-label small fw-semibold">Physician's Clinical Observations</label>
+                    <textarea class="form-control form-control-premium" id="clinical-notes" rows="4" required placeholder="Describe breathing difficulties, temperature levels, lung auscultations, and drug allocations..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 py-2.5 fw-semibold" id="generate-btn">
+                    <i class="fa-solid fa-file-signature me-2"></i>Generate Clinical Report
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Printable Structured Report Output -->
+    <div class="col-lg-7">
+        <!-- Results placeholder -->
+        <div class="glass-card-no-hover text-center p-5 h-100 d-flex flex-column align-items-center justify-content-center" id="report-placeholder">
+            <i class="fa-solid fa-file-circle-exclamation text-muted opacity-50 mb-3" style="font-size: 4rem;"></i>
+            <h5>Report Ready for Compilation</h5>
+            <p class="text-muted">Populate the patient parameters on the left and click Generate to construct a clinical audit document.</p>
+        </div>
+        
+        <!-- Document Card -->
+        <div class="glass-card-no-hover d-none" id="report-output-card">
+            <!-- Action buttons -->
+            <div class="d-flex flex-wrap gap-2 justify-content-end mb-4 border-bottom pb-3">
+                <button class="btn btn-sm btn-outline-success" id="export-json-btn">
+                    <i class="fa-solid fa-code me-1"></i>Export JSON
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="export-pdf-btn">
+                    <i class="fa-solid fa-file-pdf me-1"></i>Export PDF
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="export-docx-btn">
+                    <i class="fa-solid fa-file-word me-1"></i>Export DOCX
+                </button>
+            </div>
+            
+            <!-- Document Frame -->
+            <div class="p-4 border rounded bg-white text-dark shadow-sm" style="font-family: 'Inter', sans-serif; font-size: 0.9rem;" id="printable-report-area">
+                <!-- Document Header -->
+                <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-0 text-primary" style="font-family: 'Outfit';">MedShield-X CLINICAL REPORT</h4>
+                        <small class="text-muted">AI-Powered Multi-Agent Diagnostic Summary</small>
+                    </div>
+                    <i class="fa-solid fa-shield-heart text-primary" style="font-size: 2.25rem;"></i>
+                </div>
+                
+                <!-- Patient Meta Block -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <div class="mb-1 text-muted text-uppercase small">Patient Details</div>
+                        <div><strong>Name:</strong> <span id="doc-patient-name">Alexander Thorne</span></div>
+                        <div><strong>ID:</strong> <span id="doc-patient-id">MD-2026-8941</span></div>
+                        <div><strong>Age / Gender:</strong> <span id="doc-patient-age">45</span> / <span id="doc-patient-gender">Male</span></div>
+                    </div>
+                    <div class="col-6 text-end">
+                        <div class="mb-1 text-muted text-uppercase small">Examination Details</div>
+                        <div><strong>Report Date:</strong> <span id="doc-report-date">2026-06-21</span></div>
+                        <div><strong>Referral Clinical Dept:</strong> Pulmonology</div>
+                    </div>
+                </div>
+                
+                <!-- Radiographic Findings -->
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-1 fw-bold text-uppercase" style="font-size: 0.8rem; color: #475569;">Radiographic Findings</h6>
+                    <div class="p-2.5 rounded bg-light border mb-2">
+                        <strong>Classification Prediction:</strong>
+                        <span class="badge" id="doc-prediction-badge" style="font-size: 0.8rem; padding: 0.3em 0.6em;">NORMAL</span>
+                    </div>
+                    <div class="text-muted small" id="doc-findings-desc" style="line-height: 1.5; font-size: 0.85rem; white-space: pre-line;"></div>
+                </div>
+                
+                <!-- Doctor Notes -->
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-1 fw-bold text-uppercase" style="font-size: 0.8rem; color: #475569;">Physician Clinical Observations</h6>
+                    <p id="doc-notes-desc" style="line-height: 1.5; white-space: pre-line; font-size: 0.85rem;"></p>
+                </div>
+                
+                <!-- Dynamic XAI / RAG / Timeline Section -->
+                <div id="doc-dynamic-xai-section"></div>
+                
+                <!-- Sign-off Block -->
+                <div class="border-top pt-3 d-flex justify-content-between align-items-center mt-5">
+                    <div>
+                        <small class="text-muted d-block">Report generated automatically by MedShield-X CDSS Orchestrator.</small>
+                    </div>
+                    <div class="text-center" style="width: 150px;">
+                        <div class="border-bottom" style="height: 40px; font-family: 'Outfit'; font-style: italic;">Alexander T.</div>
+                        <small class="text-muted">Physician Signature</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("report-form");
+        const loadSampleBtn = document.getElementById("load-sample-btn");
+        const generateBtn = document.getElementById("generate-btn");
+        
+        const placeholder = document.getElementById("report-placeholder");
+        const outputCard = document.getElementById("report-output-card");
+        
+        // Report text variables
+        const docPatientName = document.getElementById("doc-patient-name");
+        const docPatientId = document.getElementById("doc-patient-id");
+        const docPatientAge = document.getElementById("doc-patient-age");
+        const docPatientGender = document.getElementById("doc-patient-gender");
+        const docReportDate = document.getElementById("doc-report-date");
+        const docPredictionBadge = document.getElementById("doc-prediction-badge");
+        const docFindingsDesc = document.getElementById("doc-findings-desc");
+        const docNotesDesc = document.getElementById("doc-notes-desc");
+        
+        let reportData = null;
+        
+        // Auto-fill from active consultation session if available
+        const activeConsultationId = localStorage.getItem("medshield_active_consultation_id");
+        const activeName = localStorage.getItem("medshield_active_consultation_patient_name");
+        const activeAge = localStorage.getItem("medshield_active_consultation_patient_age");
+        const activeGender = localStorage.getItem("medshield_active_consultation_patient_gender");
+
+        if (activeConsultationId) {
+            document.getElementById("p-id").value = "MD-2026-" + activeConsultationId;
+            if (activeName) document.getElementById("p-name").value = activeName;
+            if (activeAge) document.getElementById("p-age").value = activeAge;
+            if (activeGender) document.getElementById("p-gender").value = activeGender;
+        }
+
+        // Load Sample Click
+        loadSampleBtn.addEventListener("click", () => {
+            document.getElementById("p-id").value = "MD-2026-8941";
+            document.getElementById("p-name").value = "Alexander Thorne";
+            document.getElementById("p-age").value = "45";
+            document.getElementById("p-gender").value = "Male";
+            document.getElementById("xray-result").value = "NORMAL";
+            document.getElementById("clinical-notes").value = "Patient presented with mild dyspnea and blood pressure spikes. Clear auscultation bilaterally, no fever. Previous history of hypertension. Cardiovascular indicators evaluated.";
+        });
+        
+        // Submit report form
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const pId = document.getElementById("p-id").value;
+            const pName = document.getElementById("p-name").value;
+            const pAge = document.getElementById("p-age").value;
+            const pGender = document.getElementById("p-gender").value;
+            const xray = document.getElementById("xray-result").value;
+            const notes = document.getElementById("clinical-notes").value;
+            
+            // Set date
+            const dateStr = new Date().toISOString().substring(0, 10);
+            docReportDate.textContent = dateStr;
+            
+            // Set patient details
+            docPatientId.textContent = pId;
+            docPatientName.textContent = pName;
+            docPatientAge.textContent = pAge;
+            docPatientGender.textContent = pGender;
+            
+            // Set observations
+            docNotesDesc.textContent = notes;
+            
+            // Classify Xray descriptions
+            docPredictionBadge.textContent = xray;
+            if (xray === "NORMAL") {
+                docPredictionBadge.className = "badge bg-success text-white border border-success border-opacity-20";
+            } else {
+                docPredictionBadge.className = "badge bg-danger text-white border border-danger border-opacity-20";
+            }
+            
+            try {
+                // Change generate button text to show loading
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Generating Report...';
+                
+                const prompt = `Generate a detailed medical findings report for a chest X-ray classification of ${xray} based on these clinical observations: ${notes}. Include relevant diagnostic support.`;
+                const response = await fetch("/generate-report", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        patient_name: pName,
+                        age: pAge,
+                        gender: pGender,
+                        xray_result: xray,
+                        clinical_notes: notes
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error("Failed to contact the report reasoning agent.");
+                }
+                
+                const report = await response.json();
+                
+                // Show output
+                placeholder.classList.add("d-none");
+                outputCard.classList.remove("d-none");
+                
+                // Display the real AI-generated answer in the Radiographic Findings section
+                docFindingsDesc.innerHTML = report.answer || 'No analysis answer returned by report agent.';
+                
+                // Populate dynamic XAI / timeline / contexts section
+                let xaiHtml = "";
+                
+                if (report.execution_history && report.execution_history.length > 0) {
+                    xaiHtml += `
+                        <div class="mb-4 d-print-none">
+                            <h6 class="border-bottom pb-1 fw-bold text-uppercase" style="font-size: 0.8rem; color: #475569;">Clinical Agent Workflow Path</h6>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                ${report.execution_history.map((agent, index) => `
+                                    <span class="badge bg-secondary text-white small">${agent}</span>
+                                    ${index < report.execution_history.length - 1 ? '<i class="fa-solid fa-chevron-right text-muted small" style="font-size:0.75rem;"></i>' : ''}
+                                `).join("")}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (report.contexts && report.contexts.length > 0) {
+                    xaiHtml += `
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-1 fw-bold text-uppercase" style="font-size: 0.8rem; color: #475569;">Supporting Evidence References (RAG)</h6>
+                            <ol class="text-muted small ps-3 mb-0" style="font-size: 0.82rem; line-height: 1.45;">
+                                ${report.contexts.map(ctx => `<li class="mb-1">${ctx}</li>`).join("")}
+                            </ol>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById("doc-dynamic-xai-section").innerHTML = xaiHtml;
+                
+                // Cache JSON data including full backend report object
+                reportData = {
+                    patient: { id: pId, name: pName, age: pAge, gender: pGender },
+                    examination: { date: dateStr, classification: xray },
+                    observations: notes,
+                    ai_report: report
+                };
+                
+                // Log to activity store
+                MedShieldActivity.log('report', {
+                    patient_id: pId,
+                    patient_name: pName,
+                    classification: xray,
+                    observations: notes.substring(0, 100),
+                    answer: report.answer ? report.answer.substring(0, 200) : '',
+                    timestamp: new Date().toISOString()
+                });
+                
+            } catch (err) {
+                alert("Error generating report: " + err.message);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fa-solid fa-file-signature me-2"></i>Generate Clinical Report';
+            }
+        });
+        
+        // JSON Export
+        document.getElementById("export-json-btn").addEventListener("click", () => {
+            if (!reportData) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(reportData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `clinical_report_${reportData.patient.id}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        });
+        
+        // Print triggers
+        const triggerPrint = () => {
+            window.print();
+        };
+        document.getElementById("export-pdf-btn").addEventListener("click", triggerPrint);
+        document.getElementById("export-docx-btn").addEventListener("click", triggerPrint);
+    });
+</script>
+{% endblock %}

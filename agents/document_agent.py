@@ -17,13 +17,22 @@ class DocumentAgent(BaseAgent):
             PDFRAGGeminiPipeline()
         )
 
+        self.current_document = None
+
     def load_document(
         self,
         pdf_path
     ):
 
+        print(
+            f"\nLoading Document: {pdf_path}"
+        )
+
+        self.current_document = pdf_path
+
         self.pipeline.index_pdf(
-            pdf_path
+            pdf_path,
+            reset_index=True
         )
 
     def run(
@@ -31,27 +40,23 @@ class DocumentAgent(BaseAgent):
         state
     ):
 
-        question = (
-            state.question
+        question = state.question
+
+        print(
+            "\nDOCUMENT QUESTION:"
         )
 
-        result = (
-            self.pipeline.ask(
-                question
-            )
+        print(question)
+
+        result = self.pipeline.ask(
+            question
         )
 
-        state.answer = (
-            result["answer"]
-        )
+        state.answer = result["answer"]
 
-        state.contexts = (
-            result["contexts"]
-        )
+        state.contexts = result["contexts"]
 
-        state.current_agent = (
-            self.name
-        )
+        state.current_agent = self.name
 
         state.add_history(
             self.name

@@ -21,21 +21,15 @@ class ImageAgent(BaseAgent):
             name="ImageAgent"
         )
 
-        self.predictor = (
-            XRayInference(
-                "models/chest_xray_model.pth"
-            )
+        self.predictor = XRayInference(
+            "models/chest_xray_model.pth"
         )
 
-        self.gradcam = (
-            GradCAMProcessor(
-                "models/chest_xray_model.pth"
-            )
+        self.gradcam = GradCAMProcessor(
+            "models/chest_xray_model.pth"
         )
 
-        self.explainer = (
-            MedicalExplainer()
-        )
+        self.explainer = MedicalExplainer()
 
     def run(
         self,
@@ -47,6 +41,11 @@ class ImageAgent(BaseAgent):
                 "image_path"
             )
         )
+
+        if not image_path:
+            raise ValueError(
+                "image_path not found in state.metadata"
+            )
 
         prediction = (
             self.predictor.predict(
@@ -63,20 +62,14 @@ class ImageAgent(BaseAgent):
         explanation = (
             self.explainer.explain(
                 prediction=
-                prediction[
-                    "prediction"
-                ],
+                prediction["prediction"],
 
                 confidence=
-                prediction[
-                    "confidence"
-                ]
+                prediction["confidence"]
             )
         )
 
-        state.answer = (
-            explanation
-        )
+        state.answer = explanation
 
         state.metadata[
             "prediction"

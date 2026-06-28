@@ -17,6 +17,14 @@ class FAISSStore:
 
         self.documents = []
 
+    def reset(self):
+
+        self.index = faiss.IndexFlatL2(
+            self.dimension
+        )
+
+        self.documents = []
+
     def add_documents(
         self,
         documents,
@@ -42,6 +50,10 @@ class FAISSStore:
         top_k=3
     ):
 
+        if len(self.documents) == 0:
+
+            return []
+
         query_embedding = np.array(
             [query_embedding],
             dtype=np.float32
@@ -50,7 +62,7 @@ class FAISSStore:
         distances, indices = (
             self.index.search(
                 query_embedding,
-                top_k
+                min(top_k, len(self.documents))
             )
         )
 

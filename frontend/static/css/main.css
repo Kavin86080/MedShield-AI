@@ -76,10 +76,10 @@
     --glass-blur: 12px;
 
     /* Layout */
-    --sidebar-width:           240px;
+    --sidebar-width:           270px;
     --sidebar-collapsed-width: 68px;
     --navbar-height:           66px;
-    --transition-speed:        0.25s;
+    --transition-speed:        0.25s ease;
     --border-radius-sm:        8px;
     --border-radius:           12px;
     --border-radius-lg:        16px;

@@ -1,107 +1,125 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- AI Operations Center Header -->
-<div class="row g-3 mb-4">
+<!-- Enterprise Hero Section -->
+<div class="row g-4 mb-4">
     <div class="col-12">
-        <div class="glass-card-no-hover py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3" style="border-left: 4px solid var(--primary);">
-            <div>
-                <h4 class="mb-0 fw-extrabold text-white"><i class="fa-solid fa-gauge-high text-primary me-2"></i>AI Operations Center</h4>
-                <small class="text-muted">Real-time health, telemetry, and model orchestration metrics for MedShield-X.</small>
+        <div class="hero-section d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4">
+            <div class="hero-pattern"></div>
+            <div class="hero-overlay"></div>
+            
+            <!-- Left Side: Branding and Badges -->
+            <div class="position-relative z-1 d-flex flex-column gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <i class="fa-solid fa-shield-heart text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-0 text-white fw-extrabold" style="letter-spacing: -0.02em;">MedShield-<span class="text-info">X</span></h2>
+                        <span class="text-white text-opacity-75 small fw-medium text-uppercase tracking-wider">Enterprise AI Clinical Decision Support System</span>
+                    </div>
+                </div>
+                
+                <p class="text-white text-opacity-90 mb-1 fw-medium">Dynamic Patient RAG & Clinical Intelligence Platform</p>
+                
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                    <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 px-2 py-1"><i class="fa-solid fa-microchip me-1 text-info"></i>Gemini 2.5 Flash</span>
+                    <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 px-2 py-1"><i class="fa-solid fa-eye me-1 text-info"></i>DenseNet-121</span>
+                    <span class="badge bg-success bg-opacity-20 text-white border border-success border-opacity-50 px-2 py-1 d-flex align-items-center gap-1.5"><span class="pulse-active rounded-circle bg-success" style="width: 6px; height: 6px;"></span>Clinical System Connected</span>
+                </div>
             </div>
-            <div class="d-flex gap-2">
-                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 d-flex align-items-center gap-1.5 px-3 py-2 rounded-pill" style="font-size: 0.8rem;">
-                    <span class="pulse-active rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
-                    All Models Operational
-                </span>
+
+            <!-- Right Side: Quick Actions -->
+            <div class="position-relative z-1 d-flex flex-wrap justify-content-md-end gap-2">
+                <a href="/consultations" class="btn btn-light fw-bold px-4 py-2 text-primary shadow-sm rounded-3"><i class="fa-solid fa-plus me-2"></i>New Consultation</a>
+                <a href="/assistant" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2);"><i class="fa-solid fa-user-doctor me-2"></i>Medical Assistant</a>
+                <a href="/document" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2);"><i class="fa-solid fa-file-arrow-up me-2"></i>Upload Report</a>
+                <a href="/xray" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2);"><i class="fa-solid fa-lungs me-2"></i>X-Ray Analysis</a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Telemetry Grid Row -->
+<!-- 4 Premium Summary Cards -->
 <div class="row g-3 mb-4">
-    <!-- Active Consultation -->
-    <div class="col-md-4">
-        <div class="glass-card-no-hover h-100 p-3 d-flex flex-column justify-content-between">
+    <!-- Card 1: Active Consultation -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card-premium h-100 p-3 d-flex flex-column justify-content-between border-0 shadow-sm" style="background: var(--bg-card);">
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <span class="text-muted small fw-semibold text-uppercase tracking-wider"><i class="fa-solid fa-user-injured me-1.5 text-primary"></i>Active Consultation</span>
-                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10">Context</span>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider"><i class="fa-solid fa-user-injured me-1.5 text-primary"></i>Active Consultation</span>
+                <span class="badge badge-premium badge-premium-primary">Context</span>
             </div>
             <div class="my-auto">
-                <h5 class="fw-bold mb-1 text-white" id="telemetry-patient-name">No Active Session</h5>
-                <p class="text-muted small mb-0" id="telemetry-patient-meta">Open a workspace to load clinical context.</p>
+                <h5 class="fw-bold mb-1 text-main" id="telemetry-patient-name">No Active Session</h5>
+                <p class="text-muted small mb-0" id="telemetry-patient-meta">Open workspace for context.</p>
             </div>
-            <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                <a href="/consultations" class="text-primary text-decoration-none small fw-semibold"><i class="fa-solid fa-arrow-right me-1"></i>Select Patient</a>
+            <div class="mt-3 pt-2 border-top border-opacity-10 d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Status</span>
                 <span class="badge bg-secondary text-white" style="font-size: 0.7rem;" id="telemetry-patient-id">-</span>
             </div>
         </div>
     </div>
 
-    <!-- Vector DB Status -->
-    <div class="col-md-4">
-        <div class="glass-card-no-hover h-100 p-3 d-flex flex-column justify-content-between">
+    <!-- Card 2: AI Status -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card-premium h-100 p-3 d-flex flex-column justify-content-between border-0 shadow-sm" style="background: var(--bg-card);">
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <span class="text-muted small fw-semibold text-uppercase tracking-wider"><i class="fa-solid fa-database me-1.5 text-info"></i>Vector Database</span>
-                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-10">FAISS Index</span>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider"><i class="fa-solid fa-server me-1.5 text-success"></i>AI Engine Status</span>
+                <span class="badge badge-premium badge-premium-success d-flex align-items-center gap-1"><span class="pulse-active rounded-circle bg-success" style="width: 6px; height: 6px;"></span>Online</span>
             </div>
             <div class="my-auto row g-2">
                 <div class="col-6">
-                    <span class="text-muted d-block small">Status</span>
-                    <strong class="text-success" style="font-size: 0.95rem;"><i class="fa-solid fa-circle-check me-1"></i>Healthy</strong>
+                    <span class="text-muted d-block small">Gemini</span>
+                    <strong class="text-success" style="font-size: 0.95rem;">Active</strong>
                 </div>
                 <div class="col-6">
-                    <span class="text-muted d-block small">Total Chunks</span>
-                    <strong class="text-white" style="font-size: 0.95rem;" id="telemetry-vector-chunks">0</strong>
+                    <span class="text-muted d-block small">DenseNet</span>
+                    <strong class="text-success" style="font-size: 0.95rem;">Active</strong>
                 </div>
-                <div class="col-6">
-                    <span class="text-muted d-block small">Dimension</span>
-                    <strong class="text-white" style="font-size: 0.95rem;">768 (Dense)</strong>
+                <div class="col-12 mt-1">
+                    <span class="text-muted d-block small">RAG Pipeline</span>
+                    <strong class="text-primary" style="font-size: 0.95rem;">FAISS Indexed</strong>
                 </div>
-                <div class="col-6">
-                    <span class="text-muted d-block small">Search Metric</span>
-                    <strong class="text-white" style="font-size: 0.95rem;">Inner Product</strong>
-                </div>
-            </div>
-            <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                <a href="/evidence-explorer" class="text-info text-decoration-none small fw-semibold"><i class="fa-solid fa-magnifying-glass-chart me-1"></i>Explore Vectors</a>
-                <span class="badge bg-secondary text-white" style="font-size: 0.7rem;">FAISS v1.8</span>
             </div>
         </div>
     </div>
 
-    <!-- System Telemetry & Resource Usage -->
-    <div class="col-md-4">
-        <div class="glass-card-no-hover h-100 p-3 d-flex flex-column justify-content-between">
+    <!-- Card 3: Documents -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card-premium h-100 p-3 d-flex flex-column justify-content-between border-0 shadow-sm" style="background: var(--bg-card);">
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <span class="text-muted small fw-semibold text-uppercase tracking-wider"><i class="fa-solid fa-microchip me-1.5 text-warning"></i>System Telemetry</span>
-                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-10">Host Metrics</span>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider"><i class="fa-solid fa-file-waveform me-1.5 text-warning"></i>Documents</span>
+                <span class="badge badge-premium badge-premium-warning">Knowledge</span>
             </div>
-            <div class="my-auto">
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span class="text-muted">Memory Usage</span>
-                        <span class="text-white fw-bold" id="telemetry-memory-text">1.2 GB / 16.0 GB</span>
-                    </div>
-                    <div class="progress" style="height: 6px; background: rgba(255,255,255,0.05);">
-                        <div class="progress-bar bg-gradient-premium" id="telemetry-memory-bar" role="progressbar" style="width: 7.5%;"></div>
-                    </div>
+            <div class="my-auto row g-2">
+                <div class="col-12">
+                    <span class="text-muted d-block small">Vector Chunks Indexed</span>
+                    <h3 class="fw-bold text-main mb-0" id="telemetry-vector-chunks">0</h3>
                 </div>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <span class="text-muted d-block small">Avg Latency</span>
-                        <strong class="text-white" style="font-size: 0.95rem;">324 ms</strong>
-                    </div>
-                    <div class="col-6">
-                        <span class="text-muted d-block small">Uptime</span>
-                        <strong class="text-white" style="font-size: 0.95rem;">99.98%</strong>
-                    </div>
+                <div class="col-12">
+                    <span class="text-muted d-block small">Uploaded Files Processed</span>
+                    <strong class="text-main" style="font-size: 0.95rem;">Ready</strong>
                 </div>
             </div>
-            <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                <span class="text-muted small"><i class="fa-solid fa-server me-1"></i>Host: Localhost</span>
-                <span class="badge bg-secondary text-white" style="font-size: 0.7rem;">Python 3.11</span>
+        </div>
+    </div>
+
+    <!-- Card 4: Clinical Intelligence -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card-premium h-100 p-3 d-flex flex-column justify-content-between border-0 shadow-sm" style="background: var(--bg-card);">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <span class="text-muted small fw-bold text-uppercase tracking-wider"><i class="fa-solid fa-brain me-1.5 text-info"></i>Clinical Intelligence</span>
+                <span class="badge badge-premium badge-premium-info">Analytics</span>
+            </div>
+            <div class="my-auto row g-2">
+                <div class="col-12">
+                    <span class="text-muted d-block small">Today's AI Decisions</span>
+                    <h3 class="fw-bold text-main mb-0">Active</h3>
+                </div>
+                <div class="col-12">
+                    <span class="text-muted d-block small">Average Confidence</span>
+                    <strong class="text-success" style="font-size: 0.95rem;">94.2%</strong>
+                </div>
             </div>
         </div>
     </div>

@@ -98,9 +98,6 @@
                 </a>
             </li>
 
-            <!-- Divider -->
-            <li class="sidebar-divider"></li>
-
             <!-- Settings -->
             <li class="sidebar-item">
                 <a href="/settings" class="sidebar-item-link {% if active_page == 'settings' %}active{% endif %}" title="Settings">
@@ -121,17 +118,19 @@
     </nav>
 
     <!-- Doctor Profile Footer -->
-    <div class="sidebar-footer" id="sidebar-footer">
-        <div class="sidebar-doctor-info">
-            <div class="sidebar-doctor-avatar" id="sidebar-doc-avatar">DR</div>
-            <div class="sidebar-doctor-meta sidebar-item-text">
-                <span class="sidebar-doctor-name" id="sidebar-doc-name">Doctor</span>
-                <span class="sidebar-doctor-specialty" id="sidebar-doc-specialty">Clinical Expert</span>
+    <div class="sidebar-footer-wrapper">
+        <div class="sidebar-footer" id="sidebar-footer">
+            <div class="sidebar-doctor-info">
+                <div class="sidebar-doctor-avatar" id="sidebar-doc-avatar">DR</div>
+                <div class="sidebar-doctor-meta sidebar-item-text">
+                    <span class="sidebar-doctor-name" id="sidebar-doc-name">Doctor</span>
+                    <span class="sidebar-doctor-specialty" id="sidebar-doc-specialty">Clinical Expert</span>
+                </div>
             </div>
+            <button class="sidebar-logout-btn" id="sidebar-logout-btn" title="Sign Out">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
         </div>
-        <button class="sidebar-logout-btn" id="sidebar-logout-btn" title="Sign Out">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i>
-        </button>
     </div>
 
 </aside>

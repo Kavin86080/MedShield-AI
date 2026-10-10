@@ -114,7 +114,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES=60
 # Database Configuration
 DATABASE_URL=sqlite:///./medshield.db
 
-```
 
 ### 5. Launch Application
 ```bash

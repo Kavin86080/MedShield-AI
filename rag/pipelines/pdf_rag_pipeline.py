@@ -32,7 +32,12 @@ class PDFRAGPipeline:
         print("\nTEXT LENGTH:")
         print(len(text))
         print("\nFIRST 1000 CHARS:")
-        print(text[:1000])
+        import sys
+        try:
+            encoding = sys.stdout.encoding or 'utf-8'
+            print(text[:1000].encode(encoding, errors='replace').decode(encoding))
+        except Exception:
+            print(text[:1000].encode('ascii', errors='replace').decode('ascii'))
         print("="*50)
 
         chunks = self.chunker.chunk(

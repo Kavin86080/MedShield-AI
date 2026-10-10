@@ -7,7 +7,18 @@ from pathlib import Path
 # Database auto-init
 from backend.database.init_db import init_db
 
-# Existing legacy routers — wrapped in try/except to handle environments
+# UI router — always available regardless of AI module availability
+from backend.api.ui_routes import router as ui_router
+
+# New enterprise backend routers — always available
+from backend.api.auth import router as auth_router
+from backend.api.doctor_routes import router as doctor_router
+from backend.api.consultation_routes import router as consultation_router
+from backend.api.upload_routes import router as upload_router
+from backend.api.chat_routes import router as chat_router
+from backend.api.report_routes import router as report_router
+
+# Legacy AI routers — wrapped in try/except to handle environments
 # where TensorFlow DLL fails to load (CPU lacks AVX/AVX2 instructions)
 _legacy_routers_available = False
 try:
@@ -15,20 +26,11 @@ try:
     from backend.api.document_routes import router as document_router
     from backend.api.image_routes import router as image_router
     from backend.api.orchestrator_routes import router as orchestrator_router
-    from backend.api.ui_routes import router as ui_router
     _legacy_routers_available = True
     print("Legacy AI routers loaded successfully.")
 except Exception as _legacy_import_err:
-    print(f"Warning: Legacy routers could not be loaded ({type(_legacy_import_err).__name__}: {_legacy_import_err}). "
+    print(f"Warning: Legacy AI routers could not be loaded ({type(_legacy_import_err).__name__}: {_legacy_import_err}). "
           "Enterprise API endpoints remain fully operational.")
-
-# New enterprise backend routers
-from backend.api.auth import router as auth_router
-from backend.api.doctor_routes import router as doctor_router
-from backend.api.consultation_routes import router as consultation_router
-from backend.api.upload_routes import router as upload_router
-from backend.api.chat_routes import router as chat_router
-from backend.api.report_routes import router as report_router
 
 # Initialize database tables on startup
 try:
@@ -42,7 +44,7 @@ app = FastAPI(
     version="1.0"
 )
 
-# CORS middleware to allow React frontend connection during development
+# CORS middleware to allow frontend connection during development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In enterprise production, specify the client origin domain
@@ -81,21 +83,23 @@ def upload_file(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Include legacy routers only if they loaded successfully
-if _legacy_routers_available:
-    app.include_router(medical_router)
-    app.include_router(document_router)
-    app.include_router(image_router)
-    app.include_router(orchestrator_router)
-    app.include_router(ui_router)
+# ── UI Router (always included — serves all Jinja2 pages) ────────────────────
+app.include_router(ui_router)
 
-# Include new enterprise routers
+# ── Enterprise API Routers (always included) ──────────────────────────────────
 app.include_router(auth_router)
 app.include_router(doctor_router)
 app.include_router(consultation_router)
 app.include_router(upload_router)
 app.include_router(chat_router)
 app.include_router(report_router)
+
+# ── Legacy AI Routers (only if AI modules loaded successfully) ────────────────
+if _legacy_routers_available:
+    app.include_router(medical_router)
+    app.include_router(document_router)
+    app.include_router(image_router)
+    app.include_router(orchestrator_router)
 
 # NOTE: The catch-all SPA route has been intentionally removed.
 # The Jinja2 ui_router (ui_routes.py) handles all page rendering.

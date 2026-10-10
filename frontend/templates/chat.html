@@ -1,12 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row g-3 chat-container h-100">
-    <!-- Left Sidebar: Clinical Questions -->
-    <div class="col-xl-2 col-lg-3 d-none d-lg-block">
-        <div class="glass-card-no-hover h-100 d-flex flex-column" style="max-height: calc(100vh - 120px); overflow-y: auto;">
-            <h6 class="text-primary mb-3"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Suggested Queries</h6>
-            <div class="d-flex flex-column gap-2 mb-4">
+<!-- Workspace Header -->
+<div class="workspace-header d-flex align-items-center justify-content-between px-4 py-3 mb-3 border-bottom" style="background: var(--bg-card);">
+    <div class="d-flex flex-column">
+        <h2 class="mb-0 text-main fw-bold">Medical Assistant</h2>
+        <small class="text-muted">Enterprise Clinical AI Workspace</small>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <span id="current-consultation" class="text-muted small">Consultation: <strong class="text-main" id="consultation-id">--</strong></span>
+        <span id="current-patient" class="text-muted small">Patient: <strong class="text-main" id="header-patient-name">--</strong></span>
+        <span id="current-model" class="text-muted small">Model: <strong class="text-main" id="header-telemetry-model">--</strong></span>
+        <span class="badge badge-premium badge-premium-success d-flex align-items-center gap-1"><span class="pulse-active rounded-circle bg-success" style="width: 6px; height: 6px;"></span>Live</span>
+    </div>
+</div>
+
+<div class="row g-3 chat-container h-100 workspace-container">
+    <!-- Left Sidebar: Conversation History -->
+    <nav class="workspace-col left" role="navigation" aria-label="Conversation History">
+        <div class="glass-card-no-hover flex-grow-1 d-flex flex-column p-3 h-100" style="max-height: calc(100vh - 120px);">
+            <h5 class="mb-3 text-main fw-semibold"><i class="fa-solid fa-comments me-2 text-primary"></i>Conversations</h5>
+            <button class="btn btn-sm btn-primary mb-2" id="new-conversation-btn"><i class="fa-solid fa-plus me-1"></i>New Conversation</button>
+            <ul class="list-group list-group-flush flex-grow-1 overflow-auto" id="conversation-list" style="max-height: calc(100vh - 450px);"></ul>
+            
+            <hr class="my-3" style="border-color: var(--border-color);">
+            
+            <!-- Suggested Queries (preserved) -->
+            <div class="d-flex flex-column gap-2 mb-3">
+                <h6 class="text-primary mb-2" style="font-size: 0.8rem;"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Suggested Queries</h6>
                 <button class="btn btn-outline-secondary text-start text-truncate py-2 border rounded-3 suggested-prompt-btn" style="font-size: 0.8rem;" data-prompt="What disease causes fever?">
                     <i class="fa-solid fa-circle-question me-1 text-primary"></i>What disease causes fever?
                 </button>
@@ -28,17 +49,17 @@
                 <p class="mb-0 text-muted" style="font-size: 0.7rem;">When an active consultation is opened, your AI queries are automatically persisted and matched against files indexed in the patient's Upload Center.</p>
             </div>
         </div>
-    </div>
+    </nav>
     
     <!-- Middle Pane: Conversational Workspace -->
-    <div class="col-xl-6 col-lg-5 d-flex flex-column h-100" style="max-height: calc(100vh - 120px);">
-        <div class="glass-card-no-hover flex-grow-1 d-flex flex-column p-3 h-100">
+    <section class="workspace-col center" role="main" aria-label="Main Conversation">
+        <div class="glass-card-no-hover flex-grow-1 d-flex flex-column p-3 h-100" style="max-height: calc(100vh - 120px);">
             <!-- Header bar -->
             <div class="d-flex align-items-center justify-content-between pb-2 border-bottom mb-2">
                 <div class="d-flex align-items-center gap-2">
                     <i class="fa-solid fa-robot text-primary fs-5"></i>
                     <div>
-                        <h6 class="mb-0 fw-bold">Clinical AI Workspace</h6>
+                        <h6 class="mb-0 fw-bold text-main">Clinical AI Workspace</h6>
                         <small class="text-muted" style="font-size: 0.75rem;">Explainable Multi-Agent Reasoning</small>
                     </div>
                 </div>
@@ -48,7 +69,7 @@
             </div>
             
             <!-- Chat thread messages -->
-            <div class="chat-history" id="chat-thread" style="height: calc(100vh - 250px); overflow-y: auto;">
+            <div class="chat-history flex-grow-1" id="chat-thread" style="height: calc(100vh - 250px); overflow-y: auto;">
                 <!-- Welcome Message -->
                 <div class="chat-message system">
                     <div class="chat-avatar system-avatar">
@@ -61,7 +82,7 @@
             </div>
             
             <!-- Input control bar -->
-            <form id="chat-input-form" class="mt-auto">
+            <form id="chat-input-form" class="mt-auto pt-2 border-top">
                 <div class="input-group">
                     <input type="text" class="form-control form-control-premium" id="user-prompt" placeholder="Ask a medical question..." required>
                     <button class="btn btn-primary px-3" type="submit" id="send-btn">
@@ -70,11 +91,11 @@
                 </div>
             </form>
         </div>
-    </div>
+    </section>
 
     <!-- Right Pane: AI Inspector Panel -->
-    <div class="col-xl-4 col-lg-4 d-flex flex-column h-100" style="max-height: calc(100vh - 120px);">
-        <div class="glass-card-no-hover flex-grow-1 d-flex flex-column p-3 h-100">
+    <aside class="workspace-col right" role="complementary" aria-label="AI Inspector">
+        <div class="glass-card-no-hover flex-grow-1 d-flex flex-column p-3 h-100" style="max-height: calc(100vh - 120px);">
             <h6 class="pb-2 border-bottom mb-3 text-gradient"><i class="fa-solid fa-chart-line me-2"></i>AI Diagnostic Inspector</h6>
             
             <!-- Tab Headers -->
@@ -219,8 +240,9 @@
                         </div>
                     </div>
                 </div>
+            </div>
         </div>
-    </div>
+    </aside>
 </div>
 {% endblock %}
 
@@ -234,7 +256,8 @@
         const sendBtn = document.getElementById("send-btn");
 
         // UI Panel Items
-        const patientNameEl = document.getElementById("chat-patient-name");
+        const sidebarPatientNameEl = document.getElementById("chat-patient-name");   // sidebar card
+        const headerPatientNameEl  = document.getElementById("header-patient-name"); // top header bar
         const evidenceContent = document.getElementById("inspector-evidence-content");
         const confidenceBar = document.getElementById("confidence-bar");
         const confidencePercent = document.getElementById("confidence-percent");
@@ -256,7 +279,8 @@
         const activePatientName = localStorage.getItem("medshield_active_consultation_patient_name");
 
         if (activeConsultationId && activePatientName) {
-            patientNameEl.textContent = activePatientName;
+            if (sidebarPatientNameEl) sidebarPatientNameEl.textContent = activePatientName;
+            if (headerPatientNameEl)  headerPatientNameEl.textContent  = activePatientName;
             // Load chat history for consultation
             loadConsultationChatHistory(activeConsultationId);
             
@@ -265,7 +289,8 @@
             if (chatUploadForm) chatUploadForm.classList.remove("d-none");
             loadPatientDocuments(activeConsultationId);
         } else {
-            patientNameEl.textContent = "Global Sandbox";
+            if (sidebarPatientNameEl) sidebarPatientNameEl.textContent = "Global Sandbox";
+            if (headerPatientNameEl)  headerPatientNameEl.textContent  = "Global Sandbox";
             if (chatNoSessionAlert) chatNoSessionAlert.classList.remove("d-none");
             if (chatUploadForm) {
                 chatUploadForm.classList.add("d-none");
@@ -296,22 +321,20 @@
                 </div>
             `;
             // Reset Inspector
-            evidenceContent.innerHTML = `
+            const chunksList = document.getElementById("evidence-chunks-list");
+            if (chunksList) chunksList.innerHTML = `
                 <div class="text-center py-4">
                     <i class="fa-solid fa-magnifying-glass-nodes fs-2 text-muted mb-2 opacity-50"></i>
                     <p class="mb-0">No evidence loaded. Submit a query to inspect matched text chunks.</p>
                 </div>
             `;
-            citationsContent.innerHTML = `
-                <div class="text-center py-4">
-                    <i class="fa-solid fa-book-bookmark fs-2 text-muted mb-2 opacity-50"></i>
-                    <p class="mb-0">No citations referenced yet.</p>
-                </div>
-            `;
-            confidenceBar.style.width = "0%";
-            confidencePercent.textContent = "0%";
-            executionTimeline.innerHTML = '<div class="text-muted small">No trace logs.</div>';
-            promptDebugCode.textContent = "Submit query to inspect LLM compile block...";
+            if (confidenceBar) confidenceBar.style.width = "0%";
+            if (confidencePercent) confidencePercent.textContent = "0%";
+            if (executionTimeline) executionTimeline.innerHTML = '<div class="text-muted small">No active agent trace.</div>';
+            if (promptDebugCode) promptDebugCode.textContent = "Submit query to inspect LLM compile block...";
+            // Reset memory context
+            const memCtx = document.getElementById("memory-context-history");
+            if (memCtx) memCtx.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa-solid fa-message fs-3 mb-1 opacity-50"></i><p class="mb-0">No context history.</p></div>';
         });
 
         // Submit chat question
@@ -371,7 +394,8 @@
                     updateInspectorForConsultation(result);
                 } else {
                     // Legacy orchestrator format: result contains execution tree
-                    appendMessage("system", result.response.answer);
+                    const legacyAnswer = result.answer || (result.response && result.response.answer) || "No response generated.";
+                    appendMessage("system", legacyAnswer);
                     updateInspectorForGlobal(result);
                 }
             } catch (err) {
@@ -474,7 +498,9 @@
             const telePrompt = document.getElementById("telemetry-tokens-prompt");
             const teleComp = document.getElementById("telemetry-tokens-comp");
             const teleTotal = document.getElementById("telemetry-tokens-total");
+            const headerModel = document.getElementById("header-telemetry-model");
             if (teleModel) teleModel.textContent = "Gemini 2.5 Flash";
+            if (headerModel) headerModel.textContent = "Gemini 2.5 Flash";
             if (teleLatency) teleLatency.textContent = "324 ms";
             if (telePrompt) telePrompt.textContent = "1,420";
             if (teleComp) teleComp.textContent = "245";
@@ -520,7 +546,9 @@
             }
 
             if (promptDebugCode) {
-                promptDebugCode.textContent = `[ROUTING PATH]\n${result.route}\n\n[CONVERSATION TREE]\n${result.execution_history.join(" -> ")}\n\n[COMPILED LLM RESPONSE]\n${result.answer || result.response.answer}`;
+                const debugAnswer = result.answer || (result.response && result.response.answer) || 'N/A';
+                const historyArr = Array.isArray(result.execution_history) ? result.execution_history : [];
+                promptDebugCode.textContent = `[ROUTING PATH]\n${result.route || 'medical_qa'}\n\n[CONVERSATION TREE]\n${historyArr.join(" -> ")}\n\n[COMPILED LLM RESPONSE]\n${debugAnswer}`;
             }
 
             // Telemetry

@@ -225,77 +225,109 @@
                 generateBtn.disabled = true;
                 generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Generating Report...';
                 
-                const prompt = `Generate a detailed medical findings report for a chest X-ray classification of ${xray} based on these clinical observations: ${notes}. Include relevant diagnostic support.`;
-                const response = await fetch("/generate-report", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        patient_name: pName,
-                        age: pAge,
-                        gender: pGender,
-                        xray_result: xray,
-                        clinical_notes: notes
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error("Failed to contact the report reasoning agent.");
+                let reportContent = '';
+                let reportData_raw = null;
+
+                if (activeConsultationId) {
+                    // Use the authenticated RAG consultation report endpoint
+                    const response = await fetch(`/api/consultations/${activeConsultationId}/reports`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + localStorage.getItem("medshield_access_token")
+                        },
+                        body: JSON.stringify({ report_type: "clinical_summary" })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            localStorage.removeItem("medshield_access_token");
+                            window.location.href = "/login";
+                            return;
+                        }
+                        const errData = await response.json();
+                        throw new Error(errData.detail || "Failed to generate clinical report.");
+                    }
+
+                    const report = await response.json();
+                    reportContent = report.content || 'No content returned by clinical report agent.';
+                    reportData_raw = report;
+                } else {
+                    // Fall back to legacy endpoint
+                    const response = await fetch("/generate-report", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            patient_name: pName,
+                            age: pAge,
+                            gender: pGender,
+                            xray_result: xray,
+                            clinical_notes: notes
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Failed to contact the report reasoning agent.");
+                    }
+
+                    const report = await response.json();
+                    // Legacy endpoint returns { report: "..." }
+                    reportContent = report.report || report.answer || 'No analysis returned by report agent.';
+                    reportData_raw = report;
                 }
-                
-                const report = await response.json();
-                
+
                 // Show output
                 placeholder.classList.add("d-none");
                 outputCard.classList.remove("d-none");
-                
-                // Display the real AI-generated answer in the Radiographic Findings section
-                docFindingsDesc.innerHTML = report.answer || 'No analysis answer returned by report agent.';
-                
-                // Populate dynamic XAI / timeline / contexts section
+
+                // Display AI-generated findings
+                docFindingsDesc.innerHTML = reportContent.replace(/\n/g, '<br>');
+
+                // Populate dynamic XAI section (only available from legacy orchestrator responses)
                 let xaiHtml = "";
-                
-                if (report.execution_history && report.execution_history.length > 0) {
+
+                if (reportData_raw && reportData_raw.execution_history && reportData_raw.execution_history.length > 0) {
                     xaiHtml += `
                         <div class="mb-4 d-print-none">
                             <h6 class="border-bottom pb-1 fw-bold text-uppercase" style="font-size: 0.8rem; color: #475569;">Clinical Agent Workflow Path</h6>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                ${report.execution_history.map((agent, index) => `
+                                ${reportData_raw.execution_history.map((agent, index) => `
                                     <span class="badge bg-secondary text-white small">${agent}</span>
-                                    ${index < report.execution_history.length - 1 ? '<i class="fa-solid fa-chevron-right text-muted small" style="font-size:0.75rem;"></i>' : ''}
+                                    ${index < reportData_raw.execution_history.length - 1 ? '<i class="fa-solid fa-chevron-right text-muted small" style="font-size:0.75rem;"></i>' : ''}
                                 `).join("")}
                             </div>
                         </div>
                     `;
                 }
-                
-                if (report.contexts && report.contexts.length > 0) {
+
+                if (reportData_raw && reportData_raw.contexts && reportData_raw.contexts.length > 0) {
                     xaiHtml += `
                         <div class="mb-4">
                             <h6 class="border-bottom pb-1 fw-bold text-uppercase" style="font-size: 0.8rem; color: #475569;">Supporting Evidence References (RAG)</h6>
                             <ol class="text-muted small ps-3 mb-0" style="font-size: 0.82rem; line-height: 1.45;">
-                                ${report.contexts.map(ctx => `<li class="mb-1">${ctx}</li>`).join("")}
+                                ${reportData_raw.contexts.map(ctx => `<li class="mb-1">${ctx}</li>`).join("")}
                             </ol>
                         </div>
                     `;
                 }
-                
+
                 document.getElementById("doc-dynamic-xai-section").innerHTML = xaiHtml;
-                
-                // Cache JSON data including full backend report object
+
+                // Cache JSON data
                 reportData = {
                     patient: { id: pId, name: pName, age: pAge, gender: pGender },
                     examination: { date: dateStr, classification: xray },
                     observations: notes,
-                    ai_report: report
+                    ai_report: reportData_raw
                 };
-                
+
                 // Log to activity store
                 MedShieldActivity.log('report', {
                     patient_id: pId,
                     patient_name: pName,
                     classification: xray,
                     observations: notes.substring(0, 100),
-                    answer: report.answer ? report.answer.substring(0, 200) : '',
+                    answer: reportContent.substring(0, 200),
                     timestamp: new Date().toISOString()
                 });
                 
